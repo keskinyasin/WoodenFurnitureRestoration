@@ -1,0 +1,111 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden; /* Kaydırma çubuğunu devre dışı bırak */
+}
+
+.navbar-item {
+    transition: color 0.3s ease; /* Renk geçişi */
+    writing-mode: vertical-rl; /* Yazıları dikey hizalama */
+    text-orientation: mixed; /* Yazı yönü */
+}
+
+    .navbar-item:hover {
+        color: #FFD700; /* Hover rengi (Altın sarısı) */
+    }
+
+.half-border-bottom {
+    position: relative;
+}
+
+    .half-border-bottom::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 50%;
+        width: 50%;
+        height: 0%;
+        border-bottom: 1px solid black;
+    }
+
+.left-panel, .right-panel {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    transition: transform 1s ease-in-out; /* Animasyon geçişi */
+    z-index: 1;
+}
+
+.left-panel {
+    left: 0;
+    width: 50%;
+}
+
+.right-panel {
+    right: 0;
+    width: 50%;
+}
+
+.open .left-panel {
+    transform: translateX(-100%);
+}
+
+.open .right-panel {
+    transform: translateX(100%);
+}
+
+/* Navbar animasyon ile kaybolacak */
+.open .left-navbar {
+    transform: translateX(-100%);
+}
+
+.open .right-navbar {
+    transform: translateX(100%);
+}
+
+.left-navbar, .right-navbar {
+    transition: transform 1s ease-in-out; /* Animasyon geçişi */
+    position: absolute;
+    
+    left: 50%;
+    transform: translateX(-50%);
+    height: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    border-right: 1px solid black;
+    border-bottom-right-radius: 0.5rem;
+}
+
+.left-navbar {
+    top: 0;
+    background-color: #228B22; /* Yeşil arka plan */
+    border-bottom: 1px solid black;
+}
+
+.right-navbar {
+    bottom: 0;
+    background-color: #FFA500; /* Turuncu arka plan */
+    border-top: 1px solid black;
+}
+
+.nav-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+}

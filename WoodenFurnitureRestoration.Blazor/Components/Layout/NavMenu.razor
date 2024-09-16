@@ -1,0 +1,47 @@
+﻿@page "/navmenu"
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orta'dan Sağa ve Sola Açılan Sayfa</title>
+    <link rel="stylesheet" href="css/meanPage.css">
+</head>
+<body>
+
+    <div class="relative h-screen flex">
+
+        <!-- Sol kısım (Yeşil arka plan) -->
+        <div class="w-1/2 h-full bg-customGreen left-panel"></div>
+
+        <!-- Sağ kısım (Turuncu arka plan) -->
+        <div class="w-1/2 h-full bg-customOrange right-panel"></div>
+
+        <!-- Navbar (Ortada) -->
+        <nav class="nav-container">
+            <div class="left-navbar">
+                <!-- Sol alt köşe yuvarlatıldı -->
+                <ul class="space-y-8">
+                    <li><a href="#" class="navbar-item text-white text-lg font-semibold" id="furniture-btn">Furniture</a></li>
+                </ul>
+            </div>
+            <div class="right-navbar">
+                <!-- Sağ üst köşe yuvarlatıldı -->
+                <ul class="space-y-8">
+                    <li><a href="#" class="navbar-item text-white text-lg font-semibold" id="restoration-btn">Restoration</a></li>
+                </ul>
+            </div>
+        </nav>
+
+    </div>
+
+    <script src="js/mainPage.js"></script>
+
+</body>
+</html>
+
+
+
+
+

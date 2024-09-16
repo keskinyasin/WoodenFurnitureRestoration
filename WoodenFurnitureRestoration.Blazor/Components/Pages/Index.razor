@@ -1,0 +1,16 @@
+﻿@page "/"
+@using WoodenFurnitureRestoration.Blazor.Components.Layout
+@layout MainLayout
+@inject IJSRuntime JS
+
+
+
+@code
+{
+    private async Task ShowAlert()
+    {
+        await
+         JS
+         .InvokeVoidAsync("showAlert", "Hello from Blazor!");
+    }
+}
