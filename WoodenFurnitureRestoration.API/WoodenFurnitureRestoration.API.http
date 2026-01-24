@@ -1,0 +1,6 @@
+@WoodenFurnitureRestoration.API_HostAddress = http://localhost:5208
+
+GET {{WoodenFurnitureRestoration.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

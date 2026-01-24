@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace WoodenFurnitureRestoration.Entities
 {
     public class Restoration : IEntity
     {
-        public Restoration() { } // Parametresiz yapıcı metot
+        public Restoration() { }
 
+        // ✅ IEntity Properties (Basit Auto-Properties)
         public int Id { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+        public bool Deleted { get; set; }
 
+        // ✅ Restoration-Specific Properties
         [Required(ErrorMessage = "Lütfen restorasyon adını belirtiniz.")]
         [Display(Name = "Restorasyon Adı")]
         [StringLength(100, ErrorMessage = "Restorasyon adı en fazla 100 karakter olmalıdır.")]
@@ -25,10 +28,13 @@ namespace WoodenFurnitureRestoration.Entities
 
         [Required(ErrorMessage = "Lütfen restorasyon fiyatını belirtiniz.")]
         [Display(Name = "Restorasyon Fiyatı")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Restorasyon fiyatı 0'dan büyük olmalıdır.")]
+        [DataType(DataType.Currency)]
         public decimal RestorationPrice { get; set; }
 
         [Required(ErrorMessage = "Lütfen restorasyon görselini belirtiniz.")]
         [Display(Name = "Restorasyon Görseli")]
+        [DataType(DataType.ImageUrl, ErrorMessage = "Geçersiz görsel URL'si.")]
         public string RestorationImage { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Lütfen restorasyon durumunu belirtiniz.")]
@@ -48,31 +54,38 @@ namespace WoodenFurnitureRestoration.Entities
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode = true)]
         public DateTime RestorationEndDate { get; set; }
 
+        // ✅ Foreign Keys
         [Required(ErrorMessage = "Lütfen kategori belirtiniz.")]
         [Display(Name = "Kategori")]
         public int CategoryId { get; set; }
 
-        // Category ile ilişki (N:1)
+        // ✅ Navigation Properties
+        [JsonIgnore]
         public virtual Category Category { get; set; } = null!;
 
-        // OrderDetail ile ilişki (1:N)
+        // ✅ Collections (Circular Reference Önleme)
+        [JsonIgnore]
         public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
-        // Review ile ilişki (1:N)
+        [JsonIgnore]
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
-        // RestorationService ile ilişki (1:N)
+        [JsonIgnore]
         public virtual ICollection<RestorationService> RestorationServices { get; set; } = new List<RestorationService>();
 
+        [JsonIgnore]
         public virtual ICollection<BlogPost> BlogPosts { get; set; } = new List<BlogPost>();
 
-        // IEntity properties
-        public DateTime CreatedDate { get; set; }
-        public DateTime UpdatedDate { get; set; }
-        public bool Deleted { get; set; }
-
-        // Constructor with null checks
-        public Restoration(string restorationName, string restorationDescription, decimal restorationPrice, string restorationImage, string restorationStatus, DateTime restorationDate, DateTime restorationEndDate, int categoryId)
+        // Constructor
+        public Restoration(
+            string restorationName,
+            string restorationDescription,
+            decimal restorationPrice,
+            string restorationImage,
+            string restorationStatus,
+            DateTime restorationDate,
+            DateTime restorationEndDate,
+            int categoryId)
         {
             RestorationName = restorationName ?? throw new ArgumentNullException(nameof(restorationName));
             RestorationDescription = restorationDescription ?? throw new ArgumentNullException(nameof(restorationDescription));
@@ -84,6 +97,4 @@ namespace WoodenFurnitureRestoration.Entities
             CategoryId = categoryId;
         }
     }
-
 }
-

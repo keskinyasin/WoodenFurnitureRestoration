@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using WoodenFurnitureRestoration.Entities;
 
-
 namespace WoodenFurnitureRestoration.Data.DbContextt
 {
-
     public class WoodenFurnitureRestorationContext : DbContext
     {
         public WoodenFurnitureRestorationContext(DbContextOptions<WoodenFurnitureRestorationContext> options)
@@ -22,7 +20,7 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
-        public DbSet<InvoiceTag> InvoicesTags { get; set; }
+        public DbSet<InvoiceTag> InvoiceTags { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<OrderTag> OrderTags { get; set; }
@@ -39,12 +37,11 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
         public DbSet<ShippingPayment> ShippingPayments { get; set; }
         public DbSet<ShippingInventory> ShippingInventories { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
-        public DbSet<SupplierCategory> supplierCategories { get; set; }
+        public DbSet<SupplierCategory> SupplierCategories { get; set; }
         public DbSet<SupplierMaterial> SupplierMaterials { get; set; }
         public DbSet<SupplierMaterialTag> SupplierMaterialTags { get; set; }
         public DbSet<Tag> Tags { get; set; }
 
-        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -59,7 +56,6 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .HasMaxLength(255);
 
                 entity.Property(e => e.AddressLine2)
-                    .IsRequired()
                     .HasMaxLength(255);
 
                 entity.Property(e => e.District)
@@ -78,28 +74,34 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .IsRequired()
                     .HasMaxLength(100);
 
-                // Customer ve Address ilişkisi
                 entity.HasOne(e => e.Customer)
                     .WithMany(c => c.Addresses)
                     .HasForeignKey(e => e.CustomerId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Payment ve Address ilişkisi
                 entity.HasMany(e => e.Payments)
                     .WithOne(p => p.Address)
                     .HasForeignKey(p => p.AddressId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // SupplierMaterial ve Address ilişkisi
                 entity.HasMany(e => e.SupplierMaterials)
                     .WithOne(sm => sm.Address)
                     .HasForeignKey(sm => sm.AddressId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Supplier ve Address ilişkisi
                 entity.HasOne(e => e.Supplier)
                     .WithMany(s => s.Addresses)
                     .HasForeignKey(e => e.SupplierId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.Inventories)
+                    .WithOne(i => i.Address)
+                    .HasForeignKey(i => i.AddressId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.Shippings)
+                    .WithOne(s => s.Address)
+                    .HasForeignKey(s => s.AddressId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -127,37 +129,20 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.Property(e => e.BlogAuthor)
                     .HasMaxLength(100);
 
-                entity.HasOne(e => e.Address)
-                    .WithMany(a => a.BlogPosts)
-                    .HasForeignKey(e => e.AddressId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                // BlogPost ve Category ilişkisi
                 entity.HasOne(e => e.Category)
                     .WithMany(c => c.BlogPosts)
                     .HasForeignKey(e => e.CategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // BlogPost ve BlogPostTags ilişkisi
+                entity.HasOne(e => e.Customer)
+                    .WithMany(c => c.BlogPosts)
+                    .HasForeignKey(e => e.CustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasMany(e => e.BlogPostTags)
                     .WithOne(bpt => bpt.BlogPost)
                     .HasForeignKey(bpt => bpt.BlogPostId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.Restoration)
-                    .WithMany(r => r.BlogPosts)
-                    .HasForeignKey(e => e.RestorationId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.Review)
-                    .WithMany(r => r.BlogPosts)
-                    .HasForeignKey(e => e.ReviewId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.Shipping)
-                    .WithMany(s => s.BlogPosts)
-                    .HasForeignKey(e => e.ShippingId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<BlogPostTag>(entity =>
@@ -168,12 +153,12 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.HasOne(e => e.BlogPost)
                     .WithMany(bp => bp.BlogPostTags)
                     .HasForeignKey(e => e.BlogPostId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Tag)
                     .WithMany(t => t.BlogPostTags)
                     .HasForeignKey(e => e.TagId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Category>(entity =>
@@ -189,51 +174,31 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .IsRequired()
                     .HasMaxLength(500);
 
-                // Category ve Product ilişkisi
                 entity.HasMany(e => e.Products)
                     .WithOne(p => p.Category)
                     .HasForeignKey(p => p.CategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Category ve Restoration ilişkisi
                 entity.HasMany(e => e.Restorations)
                     .WithOne(r => r.Category)
                     .HasForeignKey(r => r.CategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Category ve RestorationService ilişkisi
                 entity.HasMany(e => e.RestorationServices)
                     .WithOne(rs => rs.Category)
                     .HasForeignKey(rs => rs.CategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Category ve SupplierMaterial ilişkisi
                 entity.HasMany(e => e.SupplierMaterials)
                     .WithOne(sm => sm.Category)
                     .HasForeignKey(sm => sm.CategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Category ve BlogPost ilişkisi
                 entity.HasMany(e => e.BlogPosts)
                     .WithOne(bp => bp.Category)
                     .HasForeignKey(bp => bp.CategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Category ve Tag ilişkisi
-                entity.HasMany(e => e.Tags)
-                    .WithMany(t => t.Categories)
-                    .UsingEntity<CategoryTag>(
-                        j => j
-                            .HasOne(ct => ct.Tag)
-                            .WithMany(t => t.CategoryTags)
-                            .HasForeignKey(ct => ct.TagId),
-                        j => j
-                            .HasOne(ct => ct.Category)
-                            .WithMany(c => c.CategoryTags)
-                            .HasForeignKey(ct => ct.CategoryId)
-                );
-
-                // Category ve Supplier ilişkisi
                 entity.HasOne(e => e.Supplier)
                     .WithMany(s => s.Categories)
                     .HasForeignKey(e => e.SupplierId)
@@ -296,22 +261,24 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.Property(e => e.CustomerImage)
                     .HasMaxLength(255);
 
-                // Customer ve Address ilişkisi
                 entity.HasMany(e => e.Addresses)
                     .WithOne(a => a.Customer)
                     .HasForeignKey(a => a.CustomerId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Customer ve Order ilişkisi
                 entity.HasMany(e => e.Orders)
                     .WithOne(o => o.Customer)
                     .HasForeignKey(o => o.CustomerId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Customer ve Review ilişkisi
                 entity.HasMany(e => e.Reviews)
                     .WithOne(r => r.Customer)
                     .HasForeignKey(r => r.CustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.BlogPosts)
+                    .WithOne(bp => bp.Customer)
+                    .HasForeignKey(bp => bp.CustomerId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -338,26 +305,24 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .IsRequired();
 
                 entity.HasOne(e => e.Address)
-                     .WithMany(a => a.Inventories)
-                     .HasForeignKey(e => e.AddressId)
-                     .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(a => a.Inventories)
+                    .HasForeignKey(e => e.AddressId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                // Inventory ve Product ilişkisi
                 entity.HasOne(e => e.Product)
                     .WithMany(p => p.Inventories)
                     .HasForeignKey(e => e.ProductId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Inventory ve SupplierMaterial ilişkisi
                 entity.HasOne(e => e.SupplierMaterial)
                     .WithMany(sm => sm.Inventories)
                     .HasForeignKey(e => e.SupplierMaterialId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Inventory ve ShippingInventory ilişkisi
                 entity.HasMany(i => i.ShippingInventories)
                     .WithOne(si => si.Inventory)
-                    .HasForeignKey(si => si.InventoryId);
+                    .HasForeignKey(si => si.InventoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Invoice>(entity =>
@@ -380,52 +345,25 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .IsRequired()
                     .HasColumnType("decimal(18,2)");
 
-                // Invoice ve Order ilişkisi
                 entity.HasOne(e => e.Order)
                     .WithMany(o => o.Invoices)
                     .HasForeignKey(e => e.OrderId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Invoice ve Payment ilişkisi
                 entity.HasOne(e => e.Payment)
                     .WithMany(p => p.Invoices)
                     .HasForeignKey(e => e.PaymentId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Invoice ve SupplierMaterial ilişkisi
-                entity.HasOne(e => e.SupplierMaterial)
-                    .WithMany(sm => sm.Invoices)
-                    .HasForeignKey(e => e.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                // Invoice ve Shipping ilişkisi
-                entity.HasOne(e => e.Shipping)
-                    .WithMany(s => s.Invoices)
-                    .HasForeignKey(e => e.ShippingId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                // Invoice ve Supplier ilişkisi
                 entity.HasOne(e => e.Supplier)
                     .WithMany(s => s.Invoices)
                     .HasForeignKey(e => e.SupplierId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Invoice ve Tag ilişkisi (many-to-many)
-                entity.HasMany(e => e.Tags)
-                    .WithMany(t => t.Invoices)
-                    .UsingEntity<Dictionary<string, object>>(
-                        "InvoiceTag",
-                        j => j
-                            .HasOne<Tag>()
-                            .WithMany()
-                            .HasForeignKey("TagId")
-                            .OnDelete(DeleteBehavior.Cascade),
-                        j => j
-                            .HasOne<Invoice>()
-                            .WithMany()
-                            .HasForeignKey("InvoiceId")
-                            .OnDelete(DeleteBehavior.Cascade)
-                    );
+                entity.HasMany(e => e.InvoiceTags)
+                    .WithOne(it => it.Invoice)
+                    .HasForeignKey(it => it.InvoiceId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<InvoiceTag>(entity =>
@@ -464,19 +402,9 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .HasForeignKey(e => e.CustomerId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(e => e.Shipping)
-                    .WithMany(s => s.Orders)
-                    .HasForeignKey(e => e.ShippingId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
                 entity.HasOne(e => e.Supplier)
                     .WithMany(s => s.Orders)
                     .HasForeignKey(e => e.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.SupplierMaterial)
-                    .WithMany(sm => sm.Orders)
-                    .HasForeignKey(e => e.SupplierMaterialId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.OrderDetails)
@@ -494,25 +422,20 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .HasForeignKey(p => p.OrderId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasMany(e => e.Shippings)
-                    .WithOne(s => s.Order)
-                    .HasForeignKey(s => s.OrderId)
+                entity.HasMany(e => e.OrderTags)
+                    .WithOne(ot => ot.Order)
+                    .HasForeignKey(ot => ot.OrderId)
                     .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(e => e.Shipping)
+    .WithMany(s => s.Orders)
+    .HasForeignKey(e => e.ShippingId)
+    .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasMany(e => e.Tags)
-                    .WithMany(t => t.Orders)
-                    .UsingEntity<Dictionary<string, object>>(
-                        "OrderTag",
-                        j => j
-                            .HasOne<Tag>()
-                            .WithMany()
-                            .HasForeignKey("TagId")
-                            .OnDelete(DeleteBehavior.Cascade),
-                        j => j
-                            .HasOne<Order>()
-                            .WithMany()
-                            .HasForeignKey("OrderId")
-                            .OnDelete(DeleteBehavior.Cascade));
+                entity.HasOne(e => e.SupplierMaterial)
+                    .WithMany(sm => sm.Orders)
+                    .HasForeignKey(e => e.SupplierMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<OrderDetail>(entity =>
@@ -596,10 +519,7 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .IsRequired();
 
                 entity.Property(e => e.ShippingId)
-        .IsRequired(false);
-
-                entity.Property(e => e.ShippingId)
-                    .IsRequired();
+                    .IsRequired(false);
 
                 entity.Property(e => e.SupplierId)
                     .IsRequired();
@@ -617,24 +537,9 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .HasForeignKey(e => e.OrderId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(e => e.Shipping) // Bu ilişkideki OnDelete davranışını Restrict yapın
-        .WithMany(s => s.Payments)
-        .HasForeignKey(e => e.ShippingId)
-        .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasMany(p => p.ShippingPayments)
-                    .WithOne(sp => sp.Payment)
-                    .HasForeignKey(sp => sp.PaymentId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
                 entity.HasOne(e => e.Supplier)
                     .WithMany(s => s.Payments)
                     .HasForeignKey(e => e.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.SupplierMaterial)
-                    .WithMany(sm => sm.Payments)
-                    .HasForeignKey(e => e.SupplierMaterialId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Invoices)
@@ -642,20 +547,25 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .HasForeignKey(i => i.PaymentId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasMany(e => e.Tags)
-                    .WithMany(t => t.Payments)
-                    .UsingEntity<Dictionary<string, object>>(
-                        "PaymentTag",
-                        j => j
-                            .HasOne<Tag>()
-                            .WithMany()
-                            .HasForeignKey("TagId")
-                            .OnDelete(DeleteBehavior.Cascade),
-                        j => j
-                            .HasOne<Payment>()
-                            .WithMany()
-                            .HasForeignKey("PaymentId")
-                            .OnDelete(DeleteBehavior.Cascade));
+                entity.HasMany(p => p.ShippingPayments)
+                    .WithOne(sp => sp.Payment)
+                    .HasForeignKey(sp => sp.PaymentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.PaymentTags)
+                    .WithOne(pt => pt.Payment)
+                    .HasForeignKey(pt => pt.PaymentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.SupplierMaterial)
+    .WithMany(sm => sm.Payments)
+    .HasForeignKey(e => e.SupplierMaterialId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Shipping)
+                    .WithMany(s => s.Payments)
+                    .HasForeignKey(e => e.ShippingId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<PaymentTag>(entity =>
@@ -702,11 +612,13 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
 
                 entity.HasOne(p => p.Category)
                     .WithMany(c => c.Products)
-                    .HasForeignKey(p => p.CategoryId);
+                    .HasForeignKey(p => p.CategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(p => p.Supplier)
                     .WithMany(s => s.Products)
-                    .HasForeignKey(p => p.SupplierId);
+                    .HasForeignKey(p => p.SupplierId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(p => p.SupplierMaterial)
                     .WithMany(sm => sm.Products)
@@ -715,35 +627,28 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
 
                 entity.HasMany(p => p.Inventories)
                     .WithOne(i => i.Product)
-                    .HasForeignKey(i => i.ProductId);
+                    .HasForeignKey(i => i.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(p => p.OrderDetails)
                     .WithOne(od => od.Product)
-                    .HasForeignKey(od => od.ProductId);
+                    .HasForeignKey(od => od.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(p => p.Reviews)
                     .WithOne(r => r.Product)
-                    .HasForeignKey(r => r.ProductId);
+                    .HasForeignKey(r => r.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(p => p.ShippingProducts)
                     .WithOne(s => s.Product)
-                    .HasForeignKey(s => s.ProductId);
+                    .HasForeignKey(s => s.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasMany(p => p.Tags)
-                    .WithMany(t => t.Products)
-                    .UsingEntity<ProductTag>(
-                        j => j
-                            .HasOne(pt => pt.Tag)
-                            .WithMany(t => t.ProductTags)
-                            .HasForeignKey(pt => pt.TagId),
-                        j => j
-                            .HasOne(pt => pt.Product)
-                            .WithMany(p => p.ProductTags)
-                            .HasForeignKey(pt => pt.ProductId),
-                        j =>
-                        {
-                            j.HasKey(pt => new { pt.ProductId, pt.TagId });
-                        });
+                entity.HasMany(p => p.ProductTags)
+                    .WithOne(pt => pt.Product)
+                    .HasForeignKey(pt => pt.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<ProductTag>(entity =>
@@ -780,7 +685,8 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .HasColumnType("decimal(18,2)");
 
                 entity.Property(e => e.RestorationImage)
-                    .IsRequired();
+                    .IsRequired()
+                    .HasMaxLength(255);
 
                 entity.Property(e => e.RestorationStatus)
                     .IsRequired()
@@ -805,11 +711,6 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.HasMany(e => e.OrderDetails)
                     .WithOne(od => od.Restoration)
                     .HasForeignKey(od => od.RestorationId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasMany(e => e.Reviews)
-                    .WithOne(r => r.Restoration)
-                    .HasForeignKey(r => r.RestorationId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(e => e.RestorationServices)
@@ -890,12 +791,6 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.SupplierId)
-                    .IsRequired();
-
-                entity.Property(e => e.SupplierMaterialId)
-                    .IsRequired();
-
                 entity.HasOne(e => e.Customer)
                     .WithMany(c => c.Reviews)
                     .HasForeignKey(e => e.CustomerId)
@@ -905,16 +800,6 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .WithMany(p => p.Reviews)
                     .HasForeignKey(e => e.ProductId)
                     .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.Supplier)
-                    .WithMany(s => s.Reviews)
-                    .HasForeignKey(e => e.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.SupplierMaterial)
-                    .WithMany(sm => sm.Reviews)
-                    .HasForeignKey(e => e.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Shipping>(entity =>
@@ -942,35 +827,26 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.Property(e => e.AddressId)
                     .IsRequired();
 
-                entity.Property(e => e.InvoiceId)
-                    .IsRequired(false);
+                entity.Property(e => e.SupplierId)
+                    .IsRequired();
 
                 entity.Property(e => e.SupplierMaterialId)
-        .IsRequired();
+                    .IsRequired();
 
                 entity.HasOne(e => e.Address)
                     .WithMany(a => a.Shippings)
                     .HasForeignKey(e => e.AddressId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(e => e.Order)
-                    .WithMany(o => o.Shippings)
-                    .HasForeignKey(e => e.OrderId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.Invoice)
-                    .WithMany(i => i.Shippings)
-                    .HasForeignKey(e => e.InvoiceId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.SupplierMaterial) // Eğer ilişkisi varsa
-        .WithMany(sm => sm.Shippings)
-        .HasForeignKey(e => e.SupplierMaterialId)
-        .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Supplier)
+                    .WithMany(s => s.Shippings)
+                    .HasForeignKey(e => e.SupplierId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(s => s.ShippingTags)
                     .WithOne(st => st.Shipping)
-                    .HasForeignKey(st => st.ShippingId);
+                    .HasForeignKey(st => st.ShippingId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(e => e.ShippingProducts)
                     .WithOne(sp => sp.Shipping)
@@ -986,16 +862,6 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .WithOne(si => si.Shipping)
                     .HasForeignKey(si => si.ShippingId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasMany(s => s.Tags)
-                    .WithMany(t => t.Shippings)
-                    .UsingEntity<ShippingTag>(
-                        j => j.HasOne(st => st.Tag)
-                              .WithMany(t => t.ShippingTags)
-                              .HasForeignKey(st => st.TagId),
-                        j => j.HasOne(st => st.Shipping)
-                              .WithMany(s => s.ShippingTags)
-                              .HasForeignKey(st => st.ShippingId));
             });
 
             modelBuilder.Entity<ShippingTag>(entity =>
@@ -1026,7 +892,7 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.HasOne(e => e.Product)
                     .WithMany(p => p.ShippingProducts)
                     .HasForeignKey(e => e.ProductId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<ShippingPayment>(entity =>
@@ -1036,12 +902,12 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.HasOne(sp => sp.Shipping)
                     .WithMany(s => s.ShippingPayments)
                     .HasForeignKey(sp => sp.ShippingId)
-                    .OnDelete(DeleteBehavior.Restrict); // veya Restrict / SetNull, ihtiyaca göre
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(sp => sp.Payment)
                     .WithMany(p => p.ShippingPayments)
                     .HasForeignKey(sp => sp.PaymentId)
-                    .OnDelete(DeleteBehavior.Cascade); // veya Restrict / SetNull, ihtiyaca göre
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<ShippingInventory>(entity =>
@@ -1051,12 +917,12 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.HasOne(si => si.Shipping)
                       .WithMany(s => s.ShippingInventories)
                       .HasForeignKey(si => si.ShippingId)
-                      .OnDelete(DeleteBehavior.Restrict); // veya Restrict / SetNull, ihtiyaca göre
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(si => si.Inventory)
                       .WithMany(i => i.ShippingInventories)
                       .HasForeignKey(si => si.InventoryId)
-                      .OnDelete(DeleteBehavior.Cascade); // veya Restrict / SetNull, ihtiyaca göre
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Supplier>(entity =>
@@ -1086,54 +952,45 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.Property(e => e.Status)
                     .IsRequired();
 
-                entity.Property(e => e.CreatedDate)
-                    .IsRequired();
-
-                entity.Property(e => e.UpdatedDate)
-                    .IsRequired();
-
-                entity.Property(e => e.Deleted)
-                    .IsRequired();
+                entity.HasMany(e => e.Addresses)
+                    .WithOne(a => a.Supplier)
+                    .HasForeignKey(a => a.SupplierId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Products)
                     .WithOne(p => p.Supplier)
                     .HasForeignKey(p => p.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cascade yerine Restrict kullanıldı.
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.SupplierMaterials)
                     .WithOne(sm => sm.Supplier)
                     .HasForeignKey(sm => sm.SupplierId)
-                    .OnDelete(DeleteBehavior.Cascade); // Cascade olarak bırakıldı.
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(e => e.Shippings)
                     .WithOne(s => s.Supplier)
                     .HasForeignKey(s => s.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cascade yerine Restrict kullanıldı.
-
-                entity.HasMany(e => e.Reviews)
-                    .WithOne(r => r.Supplier)
-                    .HasForeignKey(r => r.SupplierId)
-                    .OnDelete(DeleteBehavior.Cascade); // Cascade olarak bırakıldı.
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Payments)
                     .WithOne(p => p.Supplier)
                     .HasForeignKey(p => p.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cascade yerine Restrict kullanıldı.
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Orders)
                     .WithOne(o => o.Supplier)
                     .HasForeignKey(o => o.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cascade yerine Restrict kullanıldı.
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Invoices)
                     .WithOne(i => i.Supplier)
                     .HasForeignKey(i => i.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cascade yerine Restrict kullanıldı.
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Categories)
                     .WithOne(c => c.Supplier)
                     .HasForeignKey(c => c.SupplierId)
-                    .OnDelete(DeleteBehavior.Restrict); // Cascade yerine Restrict kullanıldı.
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<SupplierCategory>(entity =>
@@ -1141,14 +998,14 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.HasKey(sc => new { sc.SupplierId, sc.CategoryId });
 
                 entity.HasOne(sc => sc.Supplier)
-                      .WithMany(s => s.SupplierCategories)
-                      .HasForeignKey(sc => sc.SupplierId)
-                      .OnDelete(DeleteBehavior.NoAction); // No Action kullanıldı
+                    .WithMany(s => s.SupplierCategories)
+                    .HasForeignKey(sc => sc.SupplierId)
+                    .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasOne(sc => sc.Category)
-                      .WithMany(c => c.SupplierCategories)
-                      .HasForeignKey(sc => sc.CategoryId)
-                      .OnDelete(DeleteBehavior.NoAction); // No Action kullanıldı
+                    .WithMany(c => c.SupplierCategories)
+                    .HasForeignKey(sc => sc.CategoryId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
 
             modelBuilder.Entity<SupplierMaterial>(entity =>
@@ -1196,15 +1053,6 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.Property(e => e.MaterialModel)
                     .HasMaxLength(50);
 
-                entity.Property(e => e.CreatedDate)
-                    .IsRequired();
-
-                entity.Property(e => e.UpdatedDate)
-                    .IsRequired();
-
-                entity.Property(e => e.Deleted)
-                    .IsRequired();
-
                 entity.HasOne(e => e.Supplier)
                     .WithMany(s => s.SupplierMaterials)
                     .HasForeignKey(e => e.SupplierId)
@@ -1218,62 +1066,37 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                 entity.HasOne(e => e.Category)
                     .WithMany(c => c.SupplierMaterials)
                     .HasForeignKey(e => e.CategoryId)
-                    .OnDelete(DeleteBehavior.Restrict); // Category silindiğinde SupplierMaterial kayıtları ilişkisiz kalır, ancak silinmez
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Products)
                     .WithOne(p => p.SupplierMaterial)
                     .HasForeignKey(p => p.SupplierMaterialId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasMany(e => e.Shippings)
-                    .WithOne(s => s.SupplierMaterial)
-                    .HasForeignKey(s => s.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasMany(e => e.Reviews)
-                    .WithOne(r => r.SupplierMaterial)
-                    .HasForeignKey(r => r.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasMany(e => e.Payments)
-                    .WithOne(p => p.SupplierMaterial)
-                    .HasForeignKey(p => p.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasMany(e => e.Orders)
-                    .WithOne(o => o.SupplierMaterial)
-                    .HasForeignKey(o => o.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasMany(e => e.Invoices)
-                    .WithOne(i => i.SupplierMaterial)
-                    .HasForeignKey(i => i.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
                 entity.HasMany(e => e.Inventories)
                     .WithOne(i => i.SupplierMaterial)
                     .HasForeignKey(i => i.SupplierMaterialId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
+                    .OnDelete(DeleteBehavior.Restrict);
+                
                 entity.HasMany(sm => sm.SupplierMaterialTags)
                     .WithOne(smt => smt.SupplierMaterial)
-                    .HasForeignKey(smt => smt.SupplierMaterialId);
+                    .HasForeignKey(smt => smt.SupplierMaterialId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<SupplierMaterialTag>(entity =>
             {
-                // Bileşik Anahtar Tanımı
                 entity.HasKey(smt => new { smt.SupplierMaterialId, smt.TagId });
 
                 entity.HasOne(smt => smt.SupplierMaterial)
-                      .WithMany(sm => sm.SupplierMaterialTags)
-                      .HasForeignKey(smt => smt.SupplierMaterialId)
-                      .OnDelete(DeleteBehavior.Cascade); // SupplierMaterial silindiğinde, ilişkili SupplierMaterialTag'ler de silinir
+                    .WithMany(sm => sm.SupplierMaterialTags)
+                    .HasForeignKey(smt => smt.SupplierMaterialId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(smt => smt.Tag)
-                      .WithMany(t => t.SupplierMaterialTags)
-                      .HasForeignKey(smt => smt.TagId)
-                      .OnDelete(DeleteBehavior.Cascade); // Tag silindiğinde, ilişkili SupplierMaterialTag'ler de silinir
+                    .WithMany(t => t.SupplierMaterialTags)
+                    .HasForeignKey(smt => smt.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Tag>(entity =>
@@ -1285,119 +1108,46 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .IsRequired()
                     .HasMaxLength(100);
 
-                entity.Property(e => e.CreatedDate)
-                    .IsRequired();
-
-                entity.Property(e => e.UpdatedDate)
-                    .IsRequired();
-
-                entity.Property(e => e.Deleted)
-                    .IsRequired();
-
-                // BlogPost ile Tag arasındaki ilişki
                 entity.HasMany(e => e.BlogPostTags)
                     .WithOne(bpt => bpt.Tag)
                     .HasForeignKey(bpt => bpt.TagId)
-                    .OnDelete(DeleteBehavior.Restrict); // BlogPost silindiğinde, ilişkili BlogPostTag'ler de silinir
+                    .OnDelete(DeleteBehavior.Cascade);
 
-                // Shipping ile Tag arasındaki ilişki
-                entity.HasMany(t => t.ShippingTags)
+                entity.HasMany(e => e.CategoryTags)
+                    .WithOne(ct => ct.Tag)
+                    .HasForeignKey(ct => ct.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.InvoiceTags)
+                    .WithOne(it => it.Tag)
+                    .HasForeignKey(it => it.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.OrderTags)
+                    .WithOne(ot => ot.Tag)
+                    .HasForeignKey(ot => ot.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.PaymentTags)
+                    .WithOne(pt => pt.Tag)
+                    .HasForeignKey(pt => pt.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.ProductTags)
+                    .WithOne(pt => pt.Tag)
+                    .HasForeignKey(pt => pt.TagId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.ShippingTags)
                     .WithOne(st => st.Tag)
                     .HasForeignKey(st => st.TagId)
-                    .OnDelete(DeleteBehavior.Restrict); // Shipping silindiğinde, ilişkili ShippingTag'ler de silinir
+                    .OnDelete(DeleteBehavior.Cascade);
 
-                // Product ile Tag arasındaki ilişki (many-to-many)
-                entity.HasMany(e => e.Products)
-                    .WithMany(p => p.Tags)
-                    .UsingEntity<ProductTag>(
-                        j => j
-                            .HasOne(pt => pt.Product)
-                            .WithMany(p => p.ProductTags)
-                            .HasForeignKey(pt => pt.ProductId),
-                        j => j
-                            .HasOne(pt => pt.Tag)
-                            .WithMany(t => t.ProductTags)
-                            .HasForeignKey(pt => pt.TagId),
-                        j =>
-                        {
-                            j.HasKey(t => new { t.ProductId, t.TagId });
-                        });
-
-                entity.HasMany(e => e.Categories)
-                    .WithMany(p => p.Tags)
-                    .UsingEntity<CategoryTag>(
-                        j => j
-                            .HasOne(ct => ct.Category)
-                            .WithMany(c => c.CategoryTags)
-                            .HasForeignKey(ct => ct.CategoryId),
-                        j => j
-                            .HasOne(ct => ct.Tag)
-                            .WithMany(t => t.CategoryTags)
-                            .HasForeignKey(ct => ct.TagId),
-                        j =>
-                        {
-                            j.HasKey(t => new { t.CategoryId, t.TagId });
-                        });
-
-                // SupplierMaterial ile Tag arasındaki ilişki
-                entity.HasMany(t => t.SupplierMaterialTags)
+                entity.HasMany(e => e.SupplierMaterialTags)
                     .WithOne(smt => smt.Tag)
                     .HasForeignKey(smt => smt.TagId)
-                    .OnDelete(DeleteBehavior.Cascade); // SupplierMaterial silindiğinde, ilişkili SupplierMaterialTag'ler de silinir
-
-                // Invoice ile Tag arasındaki ilişki (many-to-many)
-                entity.HasMany(e => e.Invoices)
-                    .WithMany(i => i.Tags)
-                    .UsingEntity<InvoiceTag>(
-                        j => j
-                            .HasOne(it => it.Invoice)
-                            .WithMany(i => i.InvoiceTags)
-                            .HasForeignKey(it => it.InvoiceId),
-                        j => j
-                            .HasOne(it => it.Tag)
-                            .WithMany(t => t.InvoiceTags)
-                            .HasForeignKey(it => it.TagId),
-                        j =>
-                        {
-                            j.HasKey(t => new { t.InvoiceId, t.TagId });
-                        });
-
-                // Order ile Tag arasındaki ilişki (many-to-many)
-                entity.HasMany(e => e.Orders)
-                    .WithMany(o => o.Tags)
-                    .UsingEntity<OrderTag>(
-                        j => j
-                            .HasOne(ot => ot.Order)
-                            .WithMany(o => o.OrderTags)
-                            .HasForeignKey(ot => ot.OrderId),
-                        j => j
-                            .HasOne(ot => ot.Tag)
-                            .WithMany(t => t.OrderTags)
-                            .HasForeignKey(ot => ot.TagId),
-                        j =>
-                        {
-                            j.HasKey(t => new { t.OrderId, t.TagId });
-                        });
-
-                // Payment ile Tag arasındaki ilişki (many-to-many)
-                entity.HasMany(e => e.Payments)
-                    .WithMany(p => p.Tags)
-                    .UsingEntity<PaymentTag>(
-                        j => j
-                            .HasOne(pt => pt.Payment)
-                            .WithMany(p => p.PaymentTags)
-                            .HasForeignKey(pt => pt.PaymentId),
-                        j => j
-                            .HasOne(pt => pt.Tag)
-                            .WithMany(t => t.PaymentTags)
-                            .HasForeignKey(pt => pt.TagId),
-                        j =>
-                        {
-                            j.HasKey(t => new { t.PaymentId, t.TagId });
-                        });
+                    .OnDelete(DeleteBehavior.Cascade);
             });
-
-
         }
 
     }

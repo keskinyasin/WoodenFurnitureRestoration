@@ -1,0 +1,118 @@
+﻿@page "/admin/orders"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Shared.DTOs.Order
+@inject AuthService AuthService
+@inject OrderService OrderService
+@inject NavigationManager Navigation
+@inject ILogger<Orders> Logger
+
+@if (!isAuthenticated)
+{
+    <!-- ✅ Boş -->
+}
+else
+{
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h2>📝 Siparişler Yönetimi</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Siparişler (@orders.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (isLoading)
+                        {
+                            <div class="spinner-border"></div>
+                            <p>⏳ Yükleniyor...</p>
+                        }
+                        else if (orders?.Count == 0)
+                        {
+                            <p class="text-muted">📭 Sipariş yok</p>
+                        }
+                        else
+                        {
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Müşteri</th>
+                                        <th>Toplam Tutar</th>
+                                        <th>Durum</th>
+                                        <th>Oluşturulma</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in orders)
+                                    {
+                                        <tr>
+                                            <td>@order.Id</td>
+                                            <td>@order.CustomerName</td>
+                                            <td>₺@order.TotalAmount</td>
+                                            <td>
+                                                <span class="badge bg-info">@order.Status</span>
+                                            </td>
+                                            <td>@order.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info me-2">👁️ Görüntüle</button>
+                                                <button class="btn btn-sm btn-warning me-2">✏️ Güncelle</button>
+                                                <button class="btn btn-sm btn-danger">🗑️ Sil</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isAuthenticated = false;
+    private bool isLoading = false;
+    private List<OrderDto> orders = new();
+
+    // ✅ OnInitializedAsync - HEMEN ÇALIŞ
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("🔐 [Orders] IMMEDIATE auth check...");
+        isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+
+        if (!isAuthenticated)
+        {
+            Logger.LogWarning("❌ [Orders] Unauthorized - HEMEN redirect!");
+            Navigation.NavigateTo("/admin", replace: true);
+            return;
+        }
+
+        Logger.LogInformation("✅ [Orders] Authorized - loading orders");
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            isLoading = true;
+            orders = await OrderService.GetAllAsync() ?? new();
+            Logger.LogInformation($"✅ [Orders] {orders.Count} sipariş yüklendi");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ [Orders] Siparişler yükleme hatası");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

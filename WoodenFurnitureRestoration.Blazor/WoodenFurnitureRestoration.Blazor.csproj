@@ -19,9 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WoodenFurnitureRestoration.API\WoodenFurnitureRestoration.API.csproj" />
     <ProjectReference Include="..\WoodenFurnitureRestoration.Core\WoodenFurnitureRestoration.Core.csproj" />
     <ProjectReference Include="..\WoodenFurnitureRestoration.Data\WoodenFurnitureRestoration.Data.csproj" />
     <ProjectReference Include="..\WoodenFurnitureRestoration.Entity\WoodenFurnitureRestoration.Entities.csproj" />
+	<ProjectReference Include="..\WoodenFurnitureRestoration.Shared\WoodenFurnitureRestoration.Shared.csproj" />
   </ItemGroup>
 
 </Project>

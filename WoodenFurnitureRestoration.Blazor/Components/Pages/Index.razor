@@ -1,16 +1,39 @@
 ﻿@page "/"
-@using WoodenFurnitureRestoration.Blazor.Components.Layout
 @layout MainLayout
-@inject IJSRuntime JS
+@rendermode InteractiveServer
 
+<div class="hero-section">
+    <div class="container">
+        <h1>🛋️ Wooden Furniture Restoration</h1>
+        <p class="lead">Profesyonel mobilya onarım ve restorasyonu</p>
 
+        <div class="mt-5">
+            <a href="/admin" class="btn btn-primary btn-lg">
+                🔐 Admin Paneli
+            </a>
+        </div>
+    </div>
+</div>
 
-@code
-{
-    private async Task ShowAlert()
-    {
-        await
-         JS
-         .InvokeVoidAsync("showAlert", "Hello from Blazor!");
+<style>
+    .hero-section {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
     }
-}
+
+        .hero-section h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+    .lead {
+        font-size: 20px;
+        opacity: 0.9;
+    }
+</style>

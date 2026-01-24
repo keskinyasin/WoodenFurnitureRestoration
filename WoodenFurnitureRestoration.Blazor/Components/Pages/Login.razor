@@ -1,0 +1,145 @@
+﻿@page "/admin"
+@using WoodenFurnitureRestoration.Blazor.Services
+@rendermode InteractiveServer
+@inject LoginService LoginService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject ILogger<Login> Logger
+@layout EmptyLayout
+
+<div class="modern-login-container">
+    <div class="login-wrapper">
+        <div class="login-header">
+            <div class="logo-circle">
+                <i class="bi bi-hammer"></i>
+            </div>
+            <h1>Wooden Furniture</h1>
+            <p class="subtitle">Admin Panel</p>
+        </div>
+
+        <div class="login-form">
+            <div class="form-floating mb-4">
+                <input type="text"
+                       class="form-control form-control-lg"
+                       id="username"
+                       @bind="Username"
+                       placeholder="admin"
+                       disabled="@isLoading">
+                <label for="username">
+                    <i class="bi bi-person-circle"></i> Kullanıcı Adı
+                </label>
+            </div>
+
+            <div class="form-floating mb-4">
+                <input type="password"
+                       class="form-control form-control-lg"
+                       id="password"
+                       @bind="Password"
+                       placeholder="admin123"
+                       disabled="@isLoading"
+                       @onkeydown="OnPasswordKeyDown">
+                <label for="password">
+                    <i class="bi bi-lock-circle"></i> Şifre
+                </label>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-circle"></i>
+                    @ErrorMessage
+                    <button type="button" class="btn-close" @onclick="() => ErrorMessage = string.Empty"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i>
+                    @SuccessMessage
+                </div>
+            }
+
+            <button type="button"
+                    class="btn btn-primary btn-lg w-100 login-btn"
+                    @onclick="HandleLogin"
+                    disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    <span>Giriş yapılıyor...</span>
+                }
+                else
+                {
+                    <span>➡️ Giriş Yap</span>
+                }
+            </button>
+        </div>
+
+        <div class="login-footer">
+            <p class="text-muted">© 2026 Wooden Furniture Restoration. All rights reserved.</p>
+        </div>
+    </div>
+
+    <div class="login-decoration">
+        <div class="decoration-circle circle-1"></div>
+        <div class="decoration-circle circle-2"></div>
+        <div class="decoration-circle circle-3"></div>
+    </div>
+</div>
+
+@code {
+    private string Username { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private string SuccessMessage { get; set; } = string.Empty;
+    private bool isLoading = false;
+
+    private async Task OnPasswordKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleLogin();
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrEmpty(Username) || string.IsNullOrEmpty(Password))
+        {
+            ErrorMessage = "❌ Lütfen kullanıcı adı ve şifre girin!";
+            return;
+        }
+
+        ErrorMessage = string.Empty;
+        SuccessMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            Logger.LogInformation($"✅ LOGIN: U={Username}");
+            var result = await LoginService.LoginAsync(Username, Password);
+
+            if (result.IsSuccess)
+            {
+                SuccessMessage = "✅ Giriş başarılı! Yönlendiriliyorsunuz...";
+                await Task.Delay(500);
+
+                // ✅ Username ile session oluştur
+                await AuthService.SetAdminTokenAsync(result.Token, Username);
+
+                Navigation.NavigateTo("/admin/dashboard", forceLoad: true);
+            }
+            else
+            {
+                ErrorMessage = result.Message;
+                isLoading = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"❌ Hata: {ex.Message}";
+            isLoading = false;
+        }
+    }
+}

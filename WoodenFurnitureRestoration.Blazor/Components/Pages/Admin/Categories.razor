@@ -1,0 +1,153 @@
+﻿@page "/admin/categories"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Shared.DTOs.Category
+@inject AuthService AuthService
+@inject CategoryService CategoryService
+@inject NavigationManager Navigation
+@inject ILogger<Categories> Logger
+
+@if (!isAuthenticated)
+{
+    <!-- ✅ Boş -->
+}
+else
+{
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h2>📋 Kategoriler Yönetimi</h2>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5>Yeni Kategori Ekle</h5>
+                        <div class="form-group mb-3">
+                            <input type="text" class="form-control" @bind="newCategory.Name" placeholder="Kategori adı" />
+                        </div>
+                        <div class="form-group mb-3">
+                            <textarea class="form-control" @bind="newCategory.Description" placeholder="Açıklama" rows="3"></textarea>
+                        </div>
+                        <button class="btn btn-primary" @onclick="AddCategory">➕ Ekle</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Kategoriler (@categories.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (isLoading)
+                        {
+                            <div class="spinner-border"></div>
+                            <p>⏳ Yükleniyor...</p>
+                        }
+                        else if (categories?.Count == 0)
+                        {
+                            <p class="text-muted">📭 Kategori yok</p>
+                        }
+                        else
+                        {
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Adı</th>
+                                        <th>Açıklama</th>
+                                        <th>Oluşturulma</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var category in categories)
+                                    {
+                                        <tr>
+                                            <td>@category.Id</td>
+                                            <td>@category.Name</td>
+                                            <td>@category.Description</td>
+                                            <td>@category.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-warning me-2">✏️ Düzenle</button>
+                                                <button class="btn btn-sm btn-danger">🗑️ Sil</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isAuthenticated = false;
+    private bool isLoading = false;
+    private List<CategoryDto> categories = new();
+    private CreateCategoryDto newCategory = new();
+
+    // ✅ OnInitializedAsync - HEMEN ÇALIŞ
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("🔐 [Categories] IMMEDIATE auth check...");
+        isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+
+        if (!isAuthenticated)
+        {
+            Logger.LogWarning("❌ [Categories] Unauthorized - HEMEN redirect!");
+            Navigation.NavigateTo("/admin", replace: true);
+            return;
+        }
+
+        Logger.LogInformation("✅ [Categories] Authorized - loading categories");
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            isLoading = true;
+            categories = await CategoryService.GetAllAsync() ?? new();
+            Logger.LogInformation($"✅ [Categories] {categories.Count} kategori yüklendi");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ [Categories] Kategoriler yükleme hatası");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AddCategory()
+    {
+        if (string.IsNullOrWhiteSpace(newCategory.Name))
+        {
+            Logger.LogWarning("⚠️ [Categories] Kategori adı boş");
+            return;
+        }
+
+        try
+        {
+            Logger.LogInformation($"📤 [Categories] Kategori ekleniyor: {newCategory.Name}");
+            bool success = await CategoryService.CreateAsync(newCategory);
+
+            if (success)
+            {
+                Logger.LogInformation("✅ [Categories] Kategori eklendi");
+                newCategory = new();
+                await LoadCategories();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ [Categories] Kategori ekleme hatası");
+        }
+    }
+}

@@ -1,28 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace WoodenFurnitureRestoration.Entities
 {
     public class Review : IEntity
     {
-        public Review() { } // Parametresiz yapıcı metot
+        public Review() { }
 
-        public int Id { get; set; } // IEntity'den miras alınan Id özelliği
+        // ✅ IEntity Properties
+        public int Id { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+        public bool Deleted { get; set; }
 
+        // ✅ Review-Specific Properties (SADECE GEREK OLANLAR)
         [Required(ErrorMessage = "Lütfen müşteri numarası belirtiniz.")]
         [Display(Name = "Müşteri Numarası")]
         [Range(1, int.MaxValue, ErrorMessage = "Müşteri numarası 1'den küçük olamaz.")]
-        [RegularExpression("^[0-9]*$", ErrorMessage = "Müşteri numarası sadece rakam içerebilir.")]
         public int CustomerId { get; set; }
 
         [Required(ErrorMessage = "Lütfen ürün numarası belirtiniz.")]
         [Display(Name = "Ürün Numarası")]
         [Range(1, int.MaxValue, ErrorMessage = "Ürün numarası 1'den küçük olamaz.")]
-        [RegularExpression("^[0-9]*$", ErrorMessage = "Ürün numarası sadece rakam içerebilir.")]
         public int ProductId { get; set; }
 
         [Required(ErrorMessage = "Yorum açıklaması boş bırakılamaz.")]
@@ -39,36 +39,28 @@ namespace WoodenFurnitureRestoration.Entities
         [Required(ErrorMessage = "Lütfen puan belirtiniz.")]
         [Display(Name = "Puan")]
         [Range(1, 5, ErrorMessage = "Puan 1 ile 5 arasında olmalıdır.")]
-        [RegularExpression("^[0-9]*$", ErrorMessage = "Puan sadece rakam içerebilir.")]
         public int Rating { get; set; }
 
-        [Required(ErrorMessage = "Lütfen yorum durumu belirtiniz.")]
+        [Required(ErrorMessage = "Lütfen yorum durumunu belirtiniz.")]
         [Display(Name = "Yorum Durumu")]
         [StringLength(50, ErrorMessage = "Yorum durumu 50 karakterden uzun olamaz.")]
-        public string ReviewStatus { get; set; } = string.Empty; // Yorum durumu için eklenmiş alan
+        public string ReviewStatus { get; set; } = string.Empty;
 
-        // Navigation properties
+        // ✅ Navigation Properties (SADECE GEREK OLANLAR)
+        [JsonIgnore]
         public virtual Customer Customer { get; set; } = null!;
+
+        [JsonIgnore]
         public virtual Product Product { get; set; } = null!;
 
-        public int SupplierId { get; set; }
-        public virtual Supplier Supplier { get; set; } = null!;
-
-        public int SupplierMaterialId { get; set; }
-        public virtual SupplierMaterial SupplierMaterial { get; set; } = null!;
-
-        public int RestorationId { get; set; }
-        public virtual Restoration Restoration { get; set; } = null!;
-
-        public virtual ICollection<BlogPost> BlogPosts { get; set; } = new List<BlogPost>();
-
-        // IEntity properties
-        public DateTime CreatedDate { get; set; }
-        public DateTime UpdatedDate { get; set; }
-        public bool Deleted { get; set; }
-
-        // Constructor with null checks
-        public Review(int customerId, int productId, string reviewDescription, DateTime reviewDate, int rating, string reviewStatus, int supplierId, int supplierMaterialId, int restorationId)
+        // Constructor
+        public Review(
+            int customerId,
+            int productId,
+            string reviewDescription,
+            DateTime reviewDate,
+            int rating,
+            string reviewStatus)
         {
             CustomerId = customerId;
             ProductId = productId;
@@ -76,10 +68,6 @@ namespace WoodenFurnitureRestoration.Entities
             ReviewDate = reviewDate;
             Rating = rating;
             ReviewStatus = reviewStatus ?? throw new ArgumentNullException(nameof(reviewStatus));
-            SupplierId = supplierId;
-            SupplierMaterialId = supplierMaterialId;
-            RestorationId = restorationId;
         }
     }
-
 }

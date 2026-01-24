@@ -43,6 +43,8 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
         ISupplierMaterialRepository SupplierMaterialRepository { get; }
         ISupplierRepository SupplierRepository { get; }
         ITagRepository TagRepository { get; }
+
+        Task CompleteAsync();
         Task<int> SaveChangesAsync();
     }
 }

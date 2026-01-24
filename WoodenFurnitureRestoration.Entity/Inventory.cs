@@ -1,21 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace WoodenFurnitureRestoration.Entities
 {
     public class Inventory : IEntity
     {
-        public Inventory() { } // Parametresiz yapıcı metot
+        public Inventory() { }
 
+        // ✅ IEntity Properties (Basit Auto-Properties)
         public int Id { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+        public bool Deleted { get; set; }
 
+        // ✅ Inventory-Specific Properties
         [Required(ErrorMessage = "Lütfen stok miktarını belirtiniz.")]
         [Display(Name = "Stok Miktarı")]
-        [Range(1, int.MaxValue, ErrorMessage = "Stok miktarı 1'den küçük olamaz.")]
+        [Range(0, int.MaxValue, ErrorMessage = "Stok miktarı 0'dan küçük olamaz.")]
         public int QuantityInStock { get; set; }
 
         [Required(ErrorMessage = "Lütfen son güncelleme tarihini belirtiniz.")]
@@ -26,12 +29,13 @@ namespace WoodenFurnitureRestoration.Entities
 
         [Required(ErrorMessage = "Lütfen fiyat belirtiniz.")]
         [Display(Name = "Fiyat")]
-        [Range(1, double.MaxValue, ErrorMessage = "Fiyat 1'den küçük olamaz.")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Fiyat 0'dan büyük olmalıdır.")]
+        [DataType(DataType.Currency)]
         public decimal Price { get; set; }
 
         [Required(ErrorMessage = "Lütfen toplam miktarı belirtiniz.")]
         [Display(Name = "Toplam Miktar")]
-        [Range(1, double.MaxValue, ErrorMessage = "Toplam miktar 1'den küçük olamaz.")]
+        [Range(0, double.MaxValue, ErrorMessage = "Toplam miktar 0'dan küçük olamaz.")]
         public decimal TotalAmount { get; set; }
 
         [Required(ErrorMessage = "Lütfen envanter tarihini belirtiniz.")]
@@ -40,28 +44,35 @@ namespace WoodenFurnitureRestoration.Entities
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode = true)]
         public DateTime InventoryDate { get; set; }
 
-        // Relationships
+        // ✅ Foreign Keys
         [Required]
         public int ProductId { get; set; }
-        public virtual Product Product { get; set; } = null!;
 
         [Required]
         public int SupplierMaterialId { get; set; }
-        public virtual SupplierMaterial SupplierMaterial { get; set; } = null!;
 
         [Required]
         public int AddressId { get; set; }
+
+        // ✅ Navigation Properties
+        public virtual Product Product { get; set; } = null!;
+        public virtual SupplierMaterial SupplierMaterial { get; set; } = null!;
         public virtual Address Address { get; set; } = null!;
 
+        // ✅ Collections (Circular Reference Önleme)
+        [JsonIgnore]
         public virtual ICollection<ShippingInventory> ShippingInventories { get; set; } = new List<ShippingInventory>();
 
-        // IEntity properties
-        public DateTime CreatedDate { get; set; }
-        public DateTime UpdatedDate { get; set; }
-        public bool Deleted { get; set; }
-
-        // Constructor with null checks
-        public Inventory(int quantityInStock, DateTime lastUpdate, decimal price, decimal totalAmount, DateTime inventoryDate, int productId, int supplierMaterialId, int addressId)
+        // Constructor
+        public Inventory(
+            int quantityInStock,
+            DateTime lastUpdate,
+            decimal price,
+            decimal totalAmount,
+            DateTime inventoryDate,
+            int productId,
+            int supplierMaterialId,
+            int addressId)
         {
             QuantityInStock = quantityInStock;
             LastUpdate = lastUpdate;
@@ -73,6 +84,4 @@ namespace WoodenFurnitureRestoration.Entities
             AddressId = addressId;
         }
     }
-
 }
-

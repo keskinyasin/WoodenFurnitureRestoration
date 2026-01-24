@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace WoodenFurnitureRestoration.Entities
 {
@@ -10,48 +9,47 @@ namespace WoodenFurnitureRestoration.Entities
     {
         public Tag() { }
 
+        // ✅ IEntity Properties (Basit Auto-Properties)
         public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-
-        public ICollection<BlogPostTag> BlogPostTags { get; set; } = new List<BlogPostTag>();
-        public ICollection<PaymentTag> PaymentTags { get; set; } = new List<PaymentTag>();
-
-        // Product ile ilişki
-        public ICollection<Product> Products { get; set; } = new List<Product>();
-
-        // Category ile ilişki
-        public ICollection<Category> Categories { get; set; } = new List<Category>();
-
-        // SupplierMaterial ile ilişki
-        public ICollection<SupplierMaterialTag> SupplierMaterialTags { get; set; } = new List<SupplierMaterialTag>();
-
-        // Invoice ile ilişki
-        public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
-
-        // Order ile ilişki
-        public ICollection<Order> Orders { get; set; } = new List<Order>();
-
-        // Payment ile ilişki
-        public ICollection<ShippingTag> ShippingTags { get; set; } = new List<ShippingTag>();
-
-        public ICollection<CategoryTag> CategoryTags { get; set; } = new List<CategoryTag>();
-        public ICollection<InvoiceTag> InvoiceTags { get; set; } = new List<InvoiceTag>();
-        public ICollection<OrderTag> OrderTags { get; set; } = new List<OrderTag>();
-        public ICollection<ProductTag> ProductTags { get; set; } = new List<ProductTag>();
-
-        public virtual ICollection<Shipping> Shippings { get; set; } = new List<Shipping>();
-        public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
-
-        // IEntity'den gelen özellikler:
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
         public bool Deleted { get; set; }
 
-        // Constructor with null checks
+        // ✅ Tag-Specific Properties
+        [Required(ErrorMessage = "Lütfen etiket adını belirtiniz.")]
+        [Display(Name = "Etiket Adı")]
+        [StringLength(100, ErrorMessage = "Etiket adı 100 karakterden uzun olamaz.")]
+        public string Name { get; set; } = string.Empty;
+
+        // ✅ Join Table Collections SADECE (Circular Reference Önleme)
+        [JsonIgnore]
+        public virtual ICollection<BlogPostTag> BlogPostTags { get; set; } = new List<BlogPostTag>();
+
+        [JsonIgnore]
+        public virtual ICollection<CategoryTag> CategoryTags { get; set; } = new List<CategoryTag>();
+
+        [JsonIgnore]
+        public virtual ICollection<InvoiceTag> InvoiceTags { get; set; } = new List<InvoiceTag>();
+
+        [JsonIgnore]
+        public virtual ICollection<OrderTag> OrderTags { get; set; } = new List<OrderTag>();
+
+        [JsonIgnore]
+        public virtual ICollection<PaymentTag> PaymentTags { get; set; } = new List<PaymentTag>();
+
+        [JsonIgnore]
+        public virtual ICollection<ProductTag> ProductTags { get; set; } = new List<ProductTag>();
+
+        [JsonIgnore]
+        public virtual ICollection<ShippingTag> ShippingTags { get; set; } = new List<ShippingTag>();
+
+        [JsonIgnore]
+        public virtual ICollection<SupplierMaterialTag> SupplierMaterialTags { get; set; } = new List<SupplierMaterialTag>();
+
+        // Constructor
         public Tag(string name)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
         }
     }
 }
-

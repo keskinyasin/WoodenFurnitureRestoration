@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace WoodenFurnitureRestoration.Entities
 {
     public class Payment : IEntity
     {
-        public Payment() { } // Parametresiz yapıcı metot
+        public Payment() { }
 
-        public int Id { get; set; } // IEntity'den miras alınan Id özelliği
+        // ✅ IEntity Properties (Basit Auto-Properties)
+        public int Id { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+        public bool Deleted { get; set; }
 
+        // ✅ Payment-Specific Properties
         [Required(ErrorMessage = "Lütfen ödeme tarihi belirtiniz.")]
         [Display(Name = "Ödeme Tarihi")]
         [DataType(DataType.Date)]
@@ -21,8 +24,8 @@ namespace WoodenFurnitureRestoration.Entities
 
         [Required(ErrorMessage = "Lütfen ödeme miktarı belirtiniz.")]
         [Display(Name = "Ödeme Miktarı")]
-        [Range(1, double.MaxValue, ErrorMessage = "Ödeme miktarı 1'den küçük olamaz.")]
-        [RegularExpression("^[0-9]*$", ErrorMessage = "Ödeme miktarı sadece rakam içerebilir.")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Ödeme miktarı 0'dan büyük olmalıdır.")]
+        [DataType(DataType.Currency)]
         public decimal PaymentAmount { get; set; }
 
         [Required(ErrorMessage = "Lütfen ödeme yöntemi belirtiniz.")]
@@ -35,37 +38,61 @@ namespace WoodenFurnitureRestoration.Entities
         [StringLength(50, ErrorMessage = "Ödeme durumu 50 karakterden uzun olamaz.")]
         public string PaymentStatus { get; set; } = string.Empty;
 
+        // ✅ Foreign Keys
         [Required]
         public int AddressId { get; set; }
-        public virtual Address Address { get; set; } = null!;
 
         [Required]
         public int OrderId { get; set; }
-        public virtual Order Order { get; set; } = null!;
 
         public int? ShippingId { get; set; }
-        public virtual Shipping? Shipping { get; set; }
 
         [Required]
         public int SupplierId { get; set; }
-        public virtual Supplier Supplier { get; set; } = null!;
 
         [Required]
         public int SupplierMaterialId { get; set; }
+
+        // ✅ Navigation Properties
+        [JsonIgnore]
+        public virtual Address Address { get; set; } = null!;
+
+        [JsonIgnore]
+        public virtual Order Order { get; set; } = null!;
+
+        [JsonIgnore]
+        public virtual Shipping? Shipping { get; set; }
+
+        [JsonIgnore]
+        public virtual Supplier Supplier { get; set; } = null!;
+
+        [JsonIgnore]
         public virtual SupplierMaterial SupplierMaterial { get; set; } = null!;
 
+        // ✅ Collections (Circular Reference Önleme)
+        [JsonIgnore]
         public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+
+        [JsonIgnore]
         public virtual ICollection<PaymentTag> PaymentTags { get; set; } = new List<PaymentTag>();
+
+        [JsonIgnore]
         public virtual ICollection<ShippingPayment> ShippingPayments { get; set; } = new List<ShippingPayment>();
+
+        [JsonIgnore]
         public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
-        // IEntity properties
-        public DateTime CreatedDate { get; set; }
-        public DateTime UpdatedDate { get; set; }
-        public bool Deleted { get; set; }
-
-        // Constructor with null checks
-        public Payment(DateTime paymentDate, decimal paymentAmount, string paymentMethod, string paymentStatus, int addressId, int orderId, int supplierId, int supplierMaterialId)
+        // Constructor
+        public Payment(
+            DateTime paymentDate,
+            decimal paymentAmount,
+            string paymentMethod,
+            string paymentStatus,
+            int addressId,
+            int orderId,
+            int supplierId,
+            int supplierMaterialId,
+            int? shippingId = null)
         {
             PaymentDate = paymentDate;
             PaymentAmount = paymentAmount;
@@ -75,8 +102,7 @@ namespace WoodenFurnitureRestoration.Entities
             OrderId = orderId;
             SupplierId = supplierId;
             SupplierMaterialId = supplierMaterialId;
+            ShippingId = shippingId;
         }
     }
-
 }
-

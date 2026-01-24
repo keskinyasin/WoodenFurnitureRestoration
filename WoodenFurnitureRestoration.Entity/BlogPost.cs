@@ -1,18 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WoodenFurnitureRestoration.Entities
 {
     public class BlogPost : IEntity
     {
-        public BlogPost() { } // Parametresiz yapıcı metot
+        public BlogPost() { }
 
+        // ✅ IEntity Properties
         public int Id { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+        public bool Deleted { get; set; }
 
+        // ✅ BlogPost Properties
         [Required(ErrorMessage = "Lütfen blog başlığını belirtiniz.")]
         [StringLength(255, ErrorMessage = "Blog başlığı 255 karakterden uzun olamaz.")]
         public string BlogTitle { get; set; } = string.Empty;
@@ -20,7 +22,8 @@ namespace WoodenFurnitureRestoration.Entities
         [Required(ErrorMessage = "Lütfen blog içeriğini belirtiniz.")]
         public string BlogContent { get; set; } = string.Empty;
 
-        public DateTime PublishedDate { get; set; } = DateTime.Now;
+        [Required]
+        public DateTime PublishedDate { get; set; }
 
         [DataType(DataType.ImageUrl, ErrorMessage = "Geçersiz görsel URL'si.")]
         public string? BlogImage { get; set; }
@@ -31,49 +34,42 @@ namespace WoodenFurnitureRestoration.Entities
         [StringLength(100, ErrorMessage = "Blog yazarı 100 karakterden uzun olamaz.")]
         public string? BlogAuthor { get; set; }
 
-        [Required]
-        public int CustomerId { get; set; }
-        public virtual Customer Customer { get; set; } = null!;
-
+        // ✅ Foreign Keys (SADECE GEREK OLANLAR)
         [Required]
         public int CategoryId { get; set; }
+
+        public int? CustomerId { get; set; }
+
+        // ✅ Navigation Properties
         public virtual Category Category { get; set; } = null!;
+        public virtual Customer? Customer { get; set; }
+        public virtual Address? Address { get; set; }           
+        public virtual Shipping? Shipping { get; set; }       
+        public virtual Restoration? Restoration { get; set; }   
+        public virtual Review? Review { get; set; }
 
-        [Required]
-        public int ShippingId { get; set; }
-        public virtual Shipping Shipping { get; set; } = null!;
-
-        [Required]
-        public int ReviewId { get; set; }
-        public virtual Review Review { get; set; } = null!;
-
-        [Required]
-        public int RestorationId { get; set; }
-        public virtual Restoration Restoration { get; set; } = null!;
-
-        [Required]
-        public int AddressId { get; set; }
-        public virtual Address Address { get; set; } = null!;
-
+        // ✅ Collections
         public virtual ICollection<BlogPostTag> BlogPostTags { get; set; } = new List<BlogPostTag>();
 
-        // IEntity properties
-        public DateTime CreatedDate { get; set; }
-        public DateTime UpdatedDate { get; set; }
-        public bool Deleted { get; set; }
-
-        // Constructor with null checks
-        public BlogPost(string blogTitle, string blogContent, int customerId, int categoryId, int shippingId, int reviewId, int restorationId, int addressId)
+        // Constructor
+        public BlogPost(
+            string blogTitle,
+            string blogContent,
+            int categoryId,
+            DateTime? publishedDate = null,
+            int? customerId = null,
+            string? blogImage = null,
+            string? blogDescription = null,
+            string? blogAuthor = null)
         {
             BlogTitle = blogTitle ?? throw new ArgumentNullException(nameof(blogTitle));
             BlogContent = blogContent ?? throw new ArgumentNullException(nameof(blogContent));
-            CustomerId = customerId;
             CategoryId = categoryId;
-            ShippingId = shippingId;
-            ReviewId = reviewId;
-            RestorationId = restorationId;
-            AddressId = addressId;
+            PublishedDate = publishedDate ?? DateTime.Now;
+            CustomerId = customerId;
+            BlogImage = blogImage;
+            BlogDescription = blogDescription;
+            BlogAuthor = blogAuthor;
         }
     }
 }
-

@@ -1,0 +1,185 @@
+﻿@page "/admin/dashboard"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components
+@attribute [AuthorizeAdmin]
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject ILogger<Dashboard> Logger
+
+@if (!isAuthenticated)
+{
+    <!-- ✅ Boş - hemen redirect olacak -->
+}
+else
+{
+    <div class="dashboard-container">
+        <div class="dashboard-header mb-4">
+            <h1>👋 Admin Panele Hoşgeldiniz</h1>
+            <p class="text-muted">Wooden Furniture Restoration - Yönetim Paneli</p>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary">
+                        <i class="bi bi-list"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Kategoriler</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success">
+                        <i class="bi bi-box"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Ürünler</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning">
+                        <i class="bi bi-cart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Siparişler</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-info">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Müşteriler</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card welcome-card">
+                    <div class="card-body">
+                        <h5>👋 Hoşgeldiniz!</h5>
+                        <p>Wooden Furniture Restoration yönetim paneline hoş geldiniz. Yukarıdaki navigasyon menüsünü kullanarak tüm işlemleri yönetebilirsiniz.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isAuthenticated = false;
+
+    // ✅ OnInitializedAsync - HEMEN ÇALIŞ (sayfadan ÖNCE)
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("🔐 [Dashboard] IMMEDIATE auth check...");
+        isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+
+        if (!isAuthenticated)
+        {
+            Logger.LogWarning("❌ [Dashboard] Unauthorized - HEMEN redirect!");
+            // ✅ Sayfadan ÖNCE redirect (flash yok!)
+            Navigation.NavigateTo("/admin", replace: true);
+        }
+        else
+        {
+            Logger.LogInformation("✅ [Dashboard] Authorized - page rendering");
+        }
+    }
+}
+
+<style>
+    .dashboard-container {
+        padding: 0;
+    }
+
+    .dashboard-header {
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+
+        .dashboard-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .dashboard-header p {
+            margin: 8px 0 0 0;
+        }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: white;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+
+    .stat-content h3 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .stat-content p {
+        margin: 5px 0 0 0;
+        color: #718096;
+        font-size: 14px;
+    }
+
+    .welcome-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+        .welcome-card h5 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+        }
+
+        .welcome-card p {
+            margin: 0;
+            opacity: 0.95;
+        }
+</style>

@@ -1,0 +1,168 @@
+﻿@page "/admin/products"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Shared.DTOs.Product
+@inject AuthService AuthService
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+@inject ILogger<Products> Logger
+
+@if (!isAuthenticated)
+{
+    <!-- ✅ Boş -->
+}
+else
+{
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h2>📦 Ürünler Yönetimi</h2>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5>Yeni Ürün Ekle</h5>
+                        <div class="form-group mb-3">
+                            <input type="text" class="form-control" @bind="newProduct.Name" placeholder="Ürün adı" />
+                        </div>
+                        <div class="form-group mb-3">
+                            <textarea class="form-control" @bind="newProduct.Description" placeholder="Açıklama" rows="3"></textarea>
+                        </div>
+                        <div class="form-group mb-3">
+                            <input type="number" class="form-control" @bind="newProduct.Price" placeholder="Fiyat" />
+                        </div>
+                        <button class="btn btn-primary" @onclick="AddProduct">➕ Ekle</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Ürünler (@products.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (isLoading)
+                        {
+                            <div class="spinner-border"></div>
+                            <p>⏳ Yükleniyor...</p>
+                        }
+                        else if (products?.Count == 0)
+                        {
+                            <p class="text-muted">📭 Ürün yok</p>
+                        }
+                        else
+                        {
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Adı</th>
+                                        <th>Açıklama</th>
+                                        <th>Fiyat</th>
+                                        <th>Oluşturulma</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var product in products)
+                                    {
+                                        <tr>
+                                            <td>@product.Id</td>
+                                            <td>@product.Name</td>
+                                            <td>@product.Description</td>
+                                            <td>₺@product.Price</td>
+                                            <td>@product.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-warning me-2">✏️ Düzenle</button>
+                                                <button class="btn btn-sm btn-danger">🗑️ Sil</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isAuthenticated = false;
+    private bool isLoading = false;
+    private List<ProductDto> products = new();
+    private CreateProductDto newProduct = new();
+
+    // ✅ OnInitializedAsync - HEMEN ÇALIŞ
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("🔐 [Products] IMMEDIATE auth check...");
+        isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+
+        if (!isAuthenticated)
+        {
+            Logger.LogWarning("❌ [Products] Unauthorized - HEMEN redirect!");
+            Navigation.NavigateTo("/admin", replace: true);
+            return;
+        }
+
+        Logger.LogInformation("✅ [Products] Authorized - loading products");
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        try
+        {
+            isLoading = true;
+            products = await ProductService.GetAllAsync() ?? new();
+            Logger.LogInformation($"✅ [Products] {products.Count} ürün yüklendi");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ [Products] Ürünler yükleme hatası");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AddProduct()
+    {
+        if (string.IsNullOrWhiteSpace(newProduct.Name))
+        {
+            Logger.LogWarning("⚠️ [Products] Ürün adı boş");
+            return;
+        }
+
+        if (newProduct.Price <= 0)
+        {
+            Logger.LogWarning("⚠️ [Products] Fiyat geçersiz");
+            return;
+        }
+
+        try
+        {
+            Logger.LogInformation($"📤 [Products] Ürün ekleniyor: {newProduct.Name}");
+            bool success = await ProductService.CreateAsync(newProduct);
+
+            if (success)
+            {
+                Logger.LogInformation("✅ [Products] Ürün eklendi");
+                newProduct = new();
+                await LoadProducts();
+            }
+            else
+            {
+                Logger.LogWarning("⚠️ [Products] Ürün ekleme başarısız");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ [Products] Ürün ekleme hatası");
+        }
+    }
+}

@@ -96,5 +96,10 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
         {
             _context.Dispose();
         }
+
+        public Task CompleteAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
