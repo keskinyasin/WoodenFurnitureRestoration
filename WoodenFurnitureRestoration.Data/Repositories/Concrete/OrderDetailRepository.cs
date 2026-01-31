@@ -18,11 +18,6 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             _context = context;
         }
 
-        public async Task<List<OrderDetail>> GetOrderDetailsByConditionAsync(Expression<Func<OrderDetail, bool>> expression)
-        {
-            return await _context.OrderDetails
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

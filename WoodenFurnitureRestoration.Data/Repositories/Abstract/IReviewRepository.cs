@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface IReviewRepository : IRepository<Review>
     {
-
-        Task<List<Review>> GetReviewsByConditionAsync(Expression<Func<Review, bool>> expression);
-        
+        // Base IRepository<Review>'de tüm gerekli metodlar zaten var
+        // Custom Review-specific metodlar gerekirse buraya eklenebilir
     }
 }

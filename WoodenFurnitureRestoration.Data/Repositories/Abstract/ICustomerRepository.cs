@@ -10,10 +10,6 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface ICustomerRepository : IRepository<Customer>
     {
-
-        Task<List<Customer>> GetCustomersByConditionAsync(Expression<Func<Customer, bool>> expression);
-
-        Task<List<Customer>> GetCustomersByAddressAndRestorationAsync(string City, string District, string Country, int RestorationId);
-
+        Task<List<Customer>> GetCustomersByAddressAndRestorationAsync(string city, string district, string country, int restorationId);
     }
 }

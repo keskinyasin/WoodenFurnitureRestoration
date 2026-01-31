@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using WoodenFurnitureRestoration.Entities;
+﻿using WoodenFurnitureRestoration.Entities;
 
-namespace WoodenFurnitureRestoration.Core.Services.Abstract
+namespace WoodenFurnitureRestoration.Core.Services.Abstract;
+
+public interface ICategoryService
 {
-    public interface ICategoryService : IService<Category>
-    {
-        Task<List<Category>> GetCategoriesByFiltersAsync(
-                   bool? status = null,
-                   string name = null,
-                   string description = null
-               );
-    }
+    // CRUD Operations
+    Task<List<Category>> GetAllAsync();
+    Task<Category?> GetByIdAsync(int id);
+    Task<int> CreateAsync(Category category);
+    Task<bool> UpdateAsync(int id, Category category);
+    Task<bool> DeleteAsync(int id);
+
+    // Custom Business Methods
+    Task<List<Category>> GetCategoriesByFiltersAsync(
+        bool? isActive = null,
+        string? name = null,
+        string? description = null);
+    Task<List<Category>> GetCategoriesBySupplierAsync(int supplierId);
+    Task<List<Category>> GetCategoriesByCityAsync(string city);
 }

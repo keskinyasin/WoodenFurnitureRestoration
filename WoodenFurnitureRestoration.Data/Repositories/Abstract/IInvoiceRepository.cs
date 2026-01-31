@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface IInvoiceRepository : IRepository<Invoice>
     {
-
-        Task<List<Invoice>> GetInvoicesByConditionAsync(Expression<Func<Invoice, bool>> expression);
-                               
+        // Base IRepository<Invoice>'de tüm gerekli metodlar zaten var
+        // Custom Invoice-specific metodlar gerekirse buraya eklenebilir
     }
 }

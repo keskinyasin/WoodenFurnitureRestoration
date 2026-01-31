@@ -97,6 +97,8 @@ namespace WoodenFurnitureRestoration.Entities
 
         [JsonIgnore]
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+        [JsonIgnore]
+        public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 
         // Constructor
         public Shipping(

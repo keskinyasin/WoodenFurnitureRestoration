@@ -3,7 +3,6 @@ using System;
 using System.Threading.Tasks;
 using WoodenFurnitureRestoration.Data.DbContextt;
 using WoodenFurnitureRestoration.Data.Repositories.Abstract;
-using WoodenFurnitureRestoration.Entities;
 
 namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
@@ -14,6 +13,8 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
         public UnitOfWork(WoodenFurnitureRestorationContext context)
         {
             _context = context;
+
+            // ✅ SADECE TİPED REPOSITORIES
             AddressRepository = new AddressRepository(_context);
             BlogPostRepository = new BlogPostRepository(_context);
             CategoryRepository = new CategoryRepository(_context);
@@ -31,26 +32,9 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             SupplierMaterialRepository = new SupplierMaterialRepository(_context);
             SupplierRepository = new SupplierRepository(_context);
             TagRepository = new TagRepository(_context);
-
-            Addresses = new Repository<Address>(_context);
-            BlogPosts = new Repository<BlogPost>(_context);
-            Categories = new Repository<Category>(_context);
-            Customers = new Repository<Customer>(_context);
-            Inventories = new Repository<Inventory>(_context);
-            Invoices = new Repository<Invoice>(_context);
-            Orders = new Repository<Order>(_context);
-            OrderDetails = new Repository<OrderDetail>(_context);
-            Payments = new Repository<Payment>(_context);
-            Products = new Repository<Product>(_context);
-            Restorations = new Repository<Restoration>(_context);
-            RestorationServices = new Repository<RestorationService>(_context);
-            Reviews = new Repository<Review>(_context);
-            Shippings = new Repository<Shipping>(_context);
-            SupplierMaterials = new Repository<SupplierMaterial>(_context);
-            Suppliers = new Repository<Supplier>(_context);
-            Tags = new Repository<Tag>(_context);
         }
 
+        // ✅ TİPED REPOSITORIES (Interface'den)
         public IAddressRepository AddressRepository { get; private set; }
         public IBlogPostRepository BlogPostRepository { get; private set; }
         public ICategoryRepository CategoryRepository { get; private set; }
@@ -69,37 +53,16 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
         public ISupplierRepository SupplierRepository { get; private set; }
         public ITagRepository TagRepository { get; private set; }
 
-        public IRepository<Address> Addresses { get; private set; }
-        public IRepository<BlogPost> BlogPosts { get; private set; }
-        public IRepository<Category> Categories { get; private set; }
-        public IRepository<Customer> Customers { get; private set; }
-        public IRepository<Inventory> Inventories { get; private set; }
-        public IRepository<Invoice> Invoices { get; private set; }
-        public IRepository<Order> Orders { get; private set; }
-        public IRepository<OrderDetail> OrderDetails { get; private set; }
-        public IRepository<Payment> Payments { get; private set; }
-        public IRepository<Product> Products { get; private set; }
-        public IRepository<Restoration> Restorations { get; private set; }
-        public IRepository<RestorationService> RestorationServices { get; private set; }
-        public IRepository<Review> Reviews { get; private set; }
-        public IRepository<Shipping> Shippings { get; private set; }
-        public IRepository<SupplierMaterial> SupplierMaterials { get; private set; }
-        public IRepository<Supplier> Suppliers { get; private set; }
-        public IRepository<Tag> Tags { get; private set; }
-
+        // ✅ SAVE METHOD
         public async Task<int> SaveChangesAsync()
         {
             return await _context.SaveChangesAsync();
         }
 
+        // ✅ DISPOSE
         public void Dispose()
         {
-            _context.Dispose();
-        }
-
-        public Task CompleteAsync()
-        {
-            throw new NotImplementedException();
+            _context?.Dispose();
         }
     }
 }

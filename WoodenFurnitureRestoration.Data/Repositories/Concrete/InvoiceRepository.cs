@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,6 +7,7 @@ using System.Threading.Tasks;
 using WoodenFurnitureRestoration.Data.DbContextt;
 using WoodenFurnitureRestoration.Data.Repositories.Abstract;
 using WoodenFurnitureRestoration.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
@@ -18,11 +18,6 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             _context = context;
         }
 
-        public async Task<List<Invoice>> GetInvoicesByConditionAsync(Expression<Func<Invoice, bool>> expression)
-        {
-            return await _context.Invoices
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

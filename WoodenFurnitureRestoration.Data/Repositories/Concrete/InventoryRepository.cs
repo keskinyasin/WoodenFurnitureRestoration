@@ -13,17 +13,11 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
     public class InventoryRepository : Repository<Inventory>, IInventoryRepository
     {
-
         public InventoryRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<Inventory>> GetInventoriesByConditionAsync(Expression<Func<Inventory, bool>> expression)
-        {
-            return await _context.Inventories
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli - custom metod gerekmiyorsa boş kalabilir
     }
 }

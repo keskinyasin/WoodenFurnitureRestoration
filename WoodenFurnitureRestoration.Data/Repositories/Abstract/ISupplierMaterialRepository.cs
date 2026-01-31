@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface ISupplierMaterialRepository : IRepository<SupplierMaterial>
     {
-
-        Task<List<SupplierMaterial>> GetSupplierMaterialsByConditionAsync(Expression<Func<SupplierMaterial, bool>> expression);
-          
+        // Base IRepository<SupplierMaterial>'de tüm gerekli metodlar zaten var
+        // Custom SupplierMaterial-specific metodlar gerekirse buraya eklenebilir
     }
 }

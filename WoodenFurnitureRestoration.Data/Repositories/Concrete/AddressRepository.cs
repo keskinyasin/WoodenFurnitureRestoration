@@ -18,11 +18,6 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             _context = context;
         }
 
-        public async Task<List<Address>> GetAddressByCondition(Expression<Func<Address, bool>> expression)
-        {
-            return await _context.Addresses
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Address-specific custom implementations here
     }
 }

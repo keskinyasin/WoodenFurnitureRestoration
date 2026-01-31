@@ -8,7 +8,6 @@ using WoodenFurnitureRestoration.Data.Repositories.Abstract;
 using WoodenFurnitureRestoration.Entities;
 using WoodenFurnitureRestoration.Data.DbContextt;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 
 namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
@@ -17,13 +16,6 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
         public CustomerRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
-        }
-
-        public async Task<List<Customer>> GetCustomersByConditionAsync(Expression<Func<Customer, bool>> expression)
-        {
-            return await _dbSet
-                .Where(expression)
-                .ToListAsync();
         }
 
         public async Task<List<Customer>> GetCustomersByAddressAndRestorationAsync(string city, string district, string country, int restorationId)
@@ -46,14 +38,10 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             }
 
             query = query.Where(c => c.Orders.Any(o => o.OrderDetails.Any(od => od.RestorationId == restorationId)));
+
             return await query
                 .Distinct()
                 .ToListAsync();
-        }
-
-        public async Task<List<Category>> GetCustomersByFiltersAsync(bool? status, string name, string description)
-        {
-            throw new NotImplementedException();
         }
     }
 }

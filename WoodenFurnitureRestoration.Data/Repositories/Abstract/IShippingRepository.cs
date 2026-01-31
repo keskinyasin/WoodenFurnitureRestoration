@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface IShippingRepository : IRepository<Shipping>
     {
-
-        Task<List<Shipping>> GetShippingByConditionAsync(Expression<Func<Shipping, bool>> expression);
-        
+        // Base IRepository<Shipping>'de tüm gerekli metodlar zaten var
+        // Custom Shipping-specific metodlar gerekirse buraya eklenebilir
     }
 }

@@ -18,18 +18,19 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 
         public Repository(WoodenFurnitureRestorationContext context)
         {
-            _context = context; // Dependency Injection ile context'i alıyoruz
-            _dbSet = _context.Set<T>(); // DbSet'i alıyoruz
+            _context = context;
+            _dbSet = _context.Set<T>();
         }
 
+        // ✅ SYNCHRONOUS METHODS
         public void Add(T entity)
         {
             _dbSet.Add(entity);
         }
 
-        public async Task AddAsync(T entity)
+        public void Update(T entity)
         {
-            await _dbSet.AddAsync(entity);
+            _dbSet.Update(entity);
         }
 
         public void Delete(T entity)
@@ -38,21 +39,6 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
         }
 
         public T Find(int id)
-        {
-            return _dbSet.Find(id);
-        }
-
-        public async Task<T> FindAsync(int id)
-        {
-            return await _dbSet.FindAsync(id);
-        }
-
-        public T Get(Expression<Func<T, bool>> expression)
-        {
-            return _dbSet.FirstOrDefault(expression);
-        }
-
-        public T Get(int id)
         {
             return _dbSet.Find(id);
         }
@@ -67,6 +53,34 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             return _dbSet.Where(expression).ToList();
         }
 
+        public int Save()
+        {
+            return _context.SaveChanges();
+        }
+
+        // ✅ ASYNCHRONOUS METHODS
+        public async Task AddAsync(T entity)
+        {
+            await _dbSet.AddAsync(entity);
+        }
+
+        public async Task UpdateAsync(T entity)
+        {
+            _dbSet.Update(entity);
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteAsync(T entity)
+        {
+            _dbSet.Remove(entity);
+            await Task.CompletedTask;
+        }
+
+        public async Task<T> FindAsync(int id)
+        {
+            return await _dbSet.FindAsync(id);
+        }
+
         public async Task<List<T>> GetAllAsync()
         {
             return await _dbSet.ToListAsync();
@@ -77,30 +91,9 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             return await _dbSet.Where(expression).ToListAsync();
         }
 
-        public async Task<T> GetAsync(Expression<Func<T, bool>> expression)
+        public async Task<int> SaveAsync()
         {
-            return await _dbSet.FirstOrDefaultAsync(expression);
-        }
-
-        public int Save()
-        {
-            return _context.SaveChanges();
-        }
-
-        public async Task<int> SaveAsync(T entity)
-        {
-            if (_context.Entry(entity).State == EntityState.Detached)
-            {
-                _dbSet.Attach(entity);
-            }
-
             return await _context.SaveChangesAsync();
         }
-
-        public void Update(T entity)
-        {
-            _dbSet.Update(entity);
-        }
     }
-
 }

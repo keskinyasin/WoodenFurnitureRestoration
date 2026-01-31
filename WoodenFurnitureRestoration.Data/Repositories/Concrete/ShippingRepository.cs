@@ -13,17 +13,11 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
     public class ShippingRepository : Repository<Shipping>, IShippingRepository
     {
-
         public ShippingRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<Shipping>> GetShippingByConditionAsync(Expression<Func<Shipping, bool>> expression)
-        {
-            return await _context.Shippings
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

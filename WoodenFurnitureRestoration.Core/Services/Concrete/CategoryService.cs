@@ -1,41 +1,142 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using WoodenFurnitureRestoration.Core.Services.Abstract;
-using WoodenFurnitureRestoration.Data.DbContextt;
 using WoodenFurnitureRestoration.Data.Repositories.Abstract;
-using WoodenFurnitureRestoration.Data.Repositories.Concrete;
 using WoodenFurnitureRestoration.Entities;
 
-namespace WoodenFurnitureRestoration.Core.Services.Concrete
+namespace WoodenFurnitureRestoration.Core.Services.Concrete;
+
+public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategoryService
 {
-    public class CategoryService : Service<Category>, ICategoryService, ICategoryRepository
+    #region CRUD Operations
+
+    public async Task<List<Category>> GetAllAsync()
     {
-        private readonly CategoryRepository _categoryRepository;
-        private readonly WoodenFurnitureRestorationContext _context;
+        return await unitOfWork.CategoryRepository.GetAllAsync(c => !c.Deleted);
+    }
 
-        public CategoryService(CategoryRepository categoryRepository, WoodenFurnitureRestorationContext context) : base(categoryRepository, context)
+    public async Task<Category?> GetByIdAsync(int id)
+    {
+        if (id <= 0)
+            throw new ArgumentException("Geçerli bir kategori ID'si gereklidir.", nameof(id));
+
+        return await unitOfWork.CategoryRepository.FindAsync(id);
+    }
+
+    public async Task<int> CreateAsync(Category category)
+    {
+        ArgumentNullException.ThrowIfNull(category);
+        ValidateCategory(category);
+
+        try
         {
-            _categoryRepository = categoryRepository;
-            _context = context;
+            category.CreatedDate = DateTime.Now;
+            category.UpdatedDate = DateTime.Now;
+            await unitOfWork.CategoryRepository.AddAsync(category);
+            return await unitOfWork.SaveChangesAsync();
         }
-
-        public async Task<List<Category>> GetCategoriesByFiltersAsync(bool? status = null, string name = null, string description = null)
+        catch (DbUpdateException ex)
         {
-            return await _categoryRepository.GetCategoriesByFiltersAsync(status, name, description);
-        }
-
-        public async Task<List<Category>> GetCategoryByCondition(Expression<Func<Category, bool>> expression)
-        {
-            return await _categoryRepository.GetCategoryByCondition(expression);
-        }
-
-        public async Task<List<Category>> GetCategoryNameByCustomerAndAddress(string city)
-        {
-            return await _categoryRepository.GetCategoryNameByCustomerAndAddress(city);
+            throw new InvalidOperationException("Kategori kaydedilirken bir hata oluştu.", ex);
         }
     }
+
+    public async Task<bool> UpdateAsync(int id, Category category)
+    {
+        ArgumentNullException.ThrowIfNull(category);
+        ValidateCategory(category);
+
+        var existing = await unitOfWork.CategoryRepository.FindAsync(id);
+        if (existing is null) return false;
+
+        try
+        {
+            mapper.Map(category, existing);
+            existing.UpdatedDate = DateTime.Now;
+            await unitOfWork.CategoryRepository.UpdateAsync(existing);
+            await unitOfWork.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Kategori güncellenirken bir hata oluştu.", ex);
+        }
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var category = await unitOfWork.CategoryRepository.FindAsync(id);
+        if (category is null) return false;
+
+        try
+        {
+            // Soft delete
+            category.Deleted = true;
+            category.UpdatedDate = DateTime.Now;
+            await unitOfWork.CategoryRepository.UpdateAsync(category);
+            await unitOfWork.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Kategori silinirken bir hata oluştu.", ex);
+        }
+    }
+
+    #endregion
+
+    #region Custom Business Methods
+
+    public async Task<List<Category>> GetCategoriesByFiltersAsync(
+        bool? isActive = null,
+        string? name = null,
+        string? description = null)
+    {
+        return await unitOfWork.CategoryRepository.GetAllAsync(c =>
+            !c.Deleted &&
+            (!isActive.HasValue || c.Deleted != isActive.Value) &&
+            (string.IsNullOrEmpty(name) || c.CategoryName.Contains(name)) &&
+            (string.IsNullOrEmpty(description) || c.CategoryDescription.Contains(description)));
+    }
+
+    public async Task<List<Category>> GetCategoriesBySupplierAsync(int supplierId)
+    {
+        if (supplierId <= 0)
+            throw new ArgumentException("Geçerli bir tedarikçi ID'si gereklidir.", nameof(supplierId));
+
+        return await unitOfWork.CategoryRepository.GetAllAsync(c =>
+            !c.Deleted && c.SupplierId == supplierId);
+    }
+
+    public async Task<List<Category>> GetCategoriesByCityAsync(string city)
+    {
+        if (string.IsNullOrWhiteSpace(city))
+            throw new ArgumentException("Şehir adı gereklidir.", nameof(city));
+
+        return await unitOfWork.CategoryRepository.GetCategoryNameByCustomerAndAddressAsync(city);
+    }
+
+    #endregion
+
+    #region Validation
+
+    private static void ValidateCategory(Category category)
+    {
+        if (string.IsNullOrWhiteSpace(category.CategoryName))
+            throw new ArgumentException("Kategori adı gereklidir.", nameof(category));
+
+        if (string.IsNullOrWhiteSpace(category.CategoryDescription))
+            throw new ArgumentException("Kategori açıklaması gereklidir.", nameof(category));
+
+        if (category.CategoryName.Length > 100)
+            throw new ArgumentException("Kategori adı 100 karakterden uzun olamaz.", nameof(category));
+
+        if (category.CategoryDescription.Length > 500)
+            throw new ArgumentException("Kategori açıklaması 500 karakterden uzun olamaz.", nameof(category));
+
+        if (category.SupplierId <= 0)
+            throw new ArgumentException("Geçerli bir tedarikçi seçilmelidir.", nameof(category));
+    }
+
+    #endregion
 }

@@ -13,17 +13,11 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
     public class SupplierMaterialRepository : Repository<SupplierMaterial>, ISupplierMaterialRepository
     {
-
         public SupplierMaterialRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<SupplierMaterial>> GetSupplierMaterialsByConditionAsync(Expression<Func<SupplierMaterial, bool>> expression)
-        {
-            return await _context.SupplierMaterials
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

@@ -11,19 +11,13 @@ using WoodenFurnitureRestoration.Entities;
 
 namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
-    public class ProductRepository : Repository<Product> , IProductRepository
+    public class ProductRepository : Repository<Product>, IProductRepository
     {
-
         public ProductRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<Product>> GetProductByConditionAsync(Expression<Func<Product, bool>> expression)
-        {
-            return await _context.Products
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

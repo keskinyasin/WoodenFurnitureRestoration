@@ -10,6 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface IAddressRepository : IRepository<Address>
     {
-        Task<List<Address>> GetAddressByCondition(Expression<Func<Address, bool>> expression);
+        // Address-specific custom methods sadece buraya gelir
+        // Şu an custom metod gerekmiyorsa boş kalabilir
     }
 }

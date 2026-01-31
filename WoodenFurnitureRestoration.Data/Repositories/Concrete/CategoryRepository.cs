@@ -18,19 +18,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
             _context = context;
         }
 
-        public async Task<List<Category>> GetCategoriesByFiltersAsync(bool? status, string name, string description)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<List<Category>> GetCategoryByCondition(Expression<Func<Category, bool>> expression)
-        {
-            return await _dbSet
-                .Where(expression)
-                .ToListAsync();
-        }
-
-        public async Task<List<Category>> GetCategoryNameByCustomerAndAddress(string city)
+        public async Task<List<Category>> GetCategoryNameByCustomerAndAddressAsync(string city)
         {
             var addresses = await _context.Addresses
                 .Where(a => a.City == city)
@@ -38,6 +26,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 
             var supplierIds = addresses
                 .Select(a => a.SupplierId)
+                .Distinct()
                 .ToList();
 
             var result = await _context.Categories
@@ -46,6 +35,5 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 
             return result;
         }
-
     }
 }

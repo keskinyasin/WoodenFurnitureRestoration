@@ -13,17 +13,11 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
     public class OrderRepository : Repository<Order>, IOrderRepository
     {
-
         public OrderRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<Order>> GetOrdersByConditionAsync(Expression<Func<Order, bool>> expression)
-        {
-            return await _context.Orders
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

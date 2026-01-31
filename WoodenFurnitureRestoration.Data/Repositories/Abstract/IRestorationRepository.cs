@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface IRestorationRepository : IRepository<Restoration>
     {
-
-        Task<List<Restoration>> GetRestorationsByConditionAsync(Expression<Func<Restoration, bool>> expression);
-        
+        // Base IRepository<Restoration>'de tüm gerekli metodlar zaten var
+        // Custom Restoration-specific metodlar gerekirse buraya eklenebilir
     }
 }

@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface IPaymentRepository : IRepository<Payment>
     {
-
-        Task<List<Payment>> GetCustomersByConditionAsync(Expression<Func<Payment, bool>> expression);
-
+        // Base IRepository<Payment>'de tüm gerekli metodlar zaten var
+        // Custom Payment-specific metodlar gerekirse buraya eklenebilir
     }
 }

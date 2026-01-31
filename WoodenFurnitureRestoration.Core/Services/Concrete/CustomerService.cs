@@ -1,41 +1,244 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using WoodenFurnitureRestoration.Core.Services.Abstract;
-using WoodenFurnitureRestoration.Data.DbContextt;
 using WoodenFurnitureRestoration.Data.Repositories.Abstract;
-using WoodenFurnitureRestoration.Data.Repositories.Concrete;
 using WoodenFurnitureRestoration.Entities;
 
-namespace WoodenFurnitureRestoration.Core.Services.Concrete
+namespace WoodenFurnitureRestoration.Core.Services.Concrete;
+
+public class CustomerService(IUnitOfWork unitOfWork, IMapper mapper) : ICustomerService
 {
-    public class CustomerService : Service<Customer>, ICustomerService, ICustomerRepository
+    #region CRUD Operations
+
+    public async Task<List<Customer>> GetAllAsync()
     {
-        private readonly CustomerRepository _customerRepository;
-        private readonly WoodenFurnitureRestorationContext _context;
+        return await unitOfWork.CustomerRepository.GetAllAsync(c => !c.Deleted);
+    }
 
-        public CustomerService(CustomerRepository customerRepository, WoodenFurnitureRestorationContext context) : base(customerRepository, context)
+    public async Task<Customer?> GetByIdAsync(int id)
+    {
+        if (id <= 0)
+            throw new ArgumentException("Geçerli bir müşteri ID'si gereklidir.", nameof(id));
+
+        return await unitOfWork.CustomerRepository.FindAsync(id);
+    }
+
+    public async Task<int> CreateAsync(Customer customer)
+    {
+        ArgumentNullException.ThrowIfNull(customer);
+        ValidateCustomer(customer);
+
+        // Email benzersizlik kontrolü
+        var existingCustomer = await GetByEmailAsync(customer.CustomerEmail);
+        if (existingCustomer is not null)
+            throw new InvalidOperationException("Bu e-posta adresi zaten kayıtlı.");
+
+        try
         {
-            _customerRepository = customerRepository;
-            _context = context;
+            customer.CreatedDate = DateTime.Now;
+            customer.UpdatedDate = DateTime.Now;
+            customer.Deleted = false;
+            await unitOfWork.CustomerRepository.AddAsync(customer);
+            return await unitOfWork.SaveChangesAsync();
         }
-
-        public async Task<List<Customer>> GetCustomersByAddressAndRestorationAsync(string City, string District, string Country, int RestorationId)
+        catch (DbUpdateException ex)
         {
-            return await _customerRepository.GetCustomersByAddressAndRestorationAsync(City, District, Country, RestorationId);
-        }
-
-        public async Task<List<Customer>> GetCustomersByConditionAsync(Expression<Func<Customer, bool>> expression)
-        {
-            return await _customerRepository.GetCustomersByConditionAsync(expression);
-        }
-
-        public async Task<List<Category>> GetCustomersByFiltersAsync(bool? status = null, string name = null, string description = null)
-        {
-            return await _customerRepository.GetCustomersByFiltersAsync(status, name, description);
+            throw new InvalidOperationException("Müşteri kaydedilirken bir hata oluştu.", ex);
         }
     }
+
+    public async Task<bool> UpdateAsync(int id, Customer customer)
+    {
+        ArgumentNullException.ThrowIfNull(customer);
+        ValidateCustomer(customer);
+
+        var existing = await unitOfWork.CustomerRepository.FindAsync(id);
+        if (existing is null) return false;
+
+        // Email değiştiyse benzersizlik kontrolü
+        if (existing.CustomerEmail != customer.CustomerEmail)
+        {
+            var emailExists = await GetByEmailAsync(customer.CustomerEmail);
+            if (emailExists is not null)
+                throw new InvalidOperationException("Bu e-posta adresi başka bir müşteri tarafından kullanılıyor.");
+        }
+
+        try
+        {
+            mapper.Map(customer, existing);
+            existing.UpdatedDate = DateTime.Now;
+            await unitOfWork.CustomerRepository.UpdateAsync(existing);
+            await unitOfWork.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Müşteri güncellenirken bir hata oluştu.", ex);
+        }
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var customer = await unitOfWork.CustomerRepository.FindAsync(id);
+        if (customer is null) return false;
+
+        try
+        {
+            // Soft Delete
+            customer.Deleted = true;
+            customer.UpdatedDate = DateTime.Now;
+            await unitOfWork.CustomerRepository.UpdateAsync(customer);
+            await unitOfWork.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Müşteri silinirken bir hata oluştu.", ex);
+        }
+    }
+
+    #endregion
+
+    #region Custom Business Methods
+
+    public async Task<Customer?> GetByEmailAsync(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("E-posta adresi gereklidir.", nameof(email));
+
+        var customers = await unitOfWork.CustomerRepository.GetAllAsync(c =>
+            c.CustomerEmail == email && !c.Deleted);
+
+        return customers.FirstOrDefault();
+    }
+
+    public async Task<List<Customer>> GetCustomersByCityAsync(string city)
+    {
+        if (string.IsNullOrWhiteSpace(city))
+            throw new ArgumentException("Şehir adı gereklidir.", nameof(city));
+
+        return await unitOfWork.CustomerRepository.GetAllAsync(c =>
+            c.CustomerCity.Contains(city) && !c.Deleted);
+    }
+
+    public async Task<List<Customer>> GetCustomersByCountryAsync(string country)
+    {
+        if (string.IsNullOrWhiteSpace(country))
+            throw new ArgumentException("Ülke adı gereklidir.", nameof(country));
+
+        return await unitOfWork.CustomerRepository.GetAllAsync(c =>
+            c.CustomerCountry.Contains(country) && !c.Deleted);
+    }
+
+    public async Task<List<Customer>> GetCustomersByAddressAndRestorationAsync(
+        string city,
+        string district,
+        string country,
+        int restorationId)
+    {
+        if (restorationId <= 0)
+            throw new ArgumentException("Geçerli bir restorasyon ID'si gereklidir.", nameof(restorationId));
+
+        return await unitOfWork.CustomerRepository.GetCustomersByAddressAndRestorationAsync(
+            city, district, country, restorationId);
+    }
+
+    public async Task<List<Customer>> GetCustomersByFiltersAsync(
+        string? firstName = null,
+        string? lastName = null,
+        string? email = null,
+        string? city = null,
+        string? country = null)
+    {
+        return await unitOfWork.CustomerRepository.GetAllAsync(c =>
+            !c.Deleted &&
+            (string.IsNullOrEmpty(firstName) || c.CustomerFirstName.Contains(firstName)) &&
+            (string.IsNullOrEmpty(lastName) || c.CustomerLastName.Contains(lastName)) &&
+            (string.IsNullOrEmpty(email) || c.CustomerEmail.Contains(email)) &&
+            (string.IsNullOrEmpty(city) || c.CustomerCity.Contains(city)) &&
+            (string.IsNullOrEmpty(country) || c.CustomerCountry.Contains(country)));
+    }
+
+    public async Task<bool> ChangePasswordAsync(int customerId, string currentPassword, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(currentPassword))
+            throw new ArgumentException("Mevcut şifre gereklidir.", nameof(currentPassword));
+
+        if (string.IsNullOrWhiteSpace(newPassword))
+            throw new ArgumentException("Yeni şifre gereklidir.", nameof(newPassword));
+
+        if (newPassword.Length < 6)
+            throw new ArgumentException("Yeni şifre en az 6 karakter olmalıdır.", nameof(newPassword));
+
+        var customer = await unitOfWork.CustomerRepository.FindAsync(customerId);
+        if (customer is null) return false;
+
+        if (customer.CustomerPassword != currentPassword)
+            throw new InvalidOperationException("Mevcut şifre hatalı.");
+
+        try
+        {
+            customer.CustomerPassword = newPassword;
+            customer.UpdatedDate = DateTime.Now;
+            await unitOfWork.CustomerRepository.UpdateAsync(customer);
+            await unitOfWork.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Şifre güncellenirken bir hata oluştu.", ex);
+        }
+    }
+
+    #endregion
+
+    #region Validation
+
+    private static void ValidateCustomer(Customer customer)
+    {
+        if (string.IsNullOrWhiteSpace(customer.CustomerFirstName))
+            throw new ArgumentException("Müşteri adı gereklidir.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.CustomerLastName))
+            throw new ArgumentException("Müşteri soyadı gereklidir.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.CustomerEmail))
+            throw new ArgumentException("E-posta adresi gereklidir.", nameof(customer));
+
+        if (!IsValidEmail(customer.CustomerEmail))
+            throw new ArgumentException("Geçersiz e-posta adresi.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.CustomerPassword))
+            throw new ArgumentException("Şifre gereklidir.", nameof(customer));
+
+        if (customer.CustomerPassword.Length < 6)
+            throw new ArgumentException("Şifre en az 6 karakter olmalıdır.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.CustomerPhone))
+            throw new ArgumentException("Telefon numarası gereklidir.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.CustomerCity))
+            throw new ArgumentException("Şehir gereklidir.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.CustomerCountry))
+            throw new ArgumentException("Ülke gereklidir.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.CustomerPostalCode))
+            throw new ArgumentException("Posta kodu gereklidir.", nameof(customer));
+    }
+
+    private static bool IsValidEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    #endregion
 }

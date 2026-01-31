@@ -13,17 +13,11 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
     public class PaymentRepository : Repository<Payment>, IPaymentRepository
     {
-
         public PaymentRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<Payment>> GetCustomersByConditionAsync(Expression<Func<Payment, bool>> expression)
-        {
-            return await _context.Payments
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

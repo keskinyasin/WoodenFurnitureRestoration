@@ -10,7 +10,6 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface ICategoryRepository : IRepository<Category>
     {
-        Task<List<Category>> GetCategoryByCondition(Expression<Func<Category, bool>> expression);
-        Task<List<Category>> GetCategoryNameByCustomerAndAddress(string city);
+        Task<List<Category>> GetCategoryNameByCustomerAndAddressAsync(string city);
     }
 }

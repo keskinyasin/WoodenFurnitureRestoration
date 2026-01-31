@@ -13,17 +13,11 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
     public class TagRepository : Repository<Tag>, ITagRepository
     {
-
         public TagRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<Tag>> GetTagsByConditionAsync(Expression<Func<Tag, bool>> expression)
-        {
-            return await _context.Tags
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

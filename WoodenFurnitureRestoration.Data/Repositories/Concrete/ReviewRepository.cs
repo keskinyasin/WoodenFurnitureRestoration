@@ -13,17 +13,11 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Concrete
 {
     public class ReviewRepository : Repository<Review>, IReviewRepository
     {
-
         public ReviewRepository(WoodenFurnitureRestorationContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<List<Review>> GetReviewsByConditionAsync(Expression<Func<Review, bool>> expression)
-        {
-            return await _context.Reviews
-                .Where(expression)
-                .ToListAsync();
-        }
+        // Base Repository metodları yeterli
     }
 }

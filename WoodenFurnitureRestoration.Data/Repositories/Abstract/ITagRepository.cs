@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface ITagRepository : IRepository<Tag>
     {
-
-        Task<List<Tag>> GetTagsByConditionAsync(Expression<Func<Tag, bool>> expression);
-         
+        // Base IRepository<Tag>'de tüm gerekli metodlar zaten var
+        // Custom Tag-specific metodlar gerekirse buraya eklenebilir
     }
 }

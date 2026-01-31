@@ -364,6 +364,12 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .WithOne(it => it.Invoice)
                     .HasForeignKey(it => it.InvoiceId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.SupplierMaterial)
+    .WithMany(sm => sm.Invoices)
+    .HasForeignKey(e => e.SupplierMaterialId)
+    .OnDelete(DeleteBehavior.Restrict);
+
             });
 
             modelBuilder.Entity<InvoiceTag>(entity =>
@@ -426,7 +432,7 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .WithOne(ot => ot.Order)
                     .HasForeignKey(ot => ot.OrderId)
                     .OnDelete(DeleteBehavior.Cascade);
-                
+
                 entity.HasOne(e => e.Shipping)
     .WithMany(s => s.Orders)
     .HasForeignKey(e => e.ShippingId)
@@ -800,6 +806,22 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .WithMany(p => p.Reviews)
                     .HasForeignKey(e => e.ProductId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Supplier)
+    .WithMany(s => s.Reviews)
+    .HasForeignKey(e => e.SupplierId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.SupplierMaterial)
+                    .WithMany(sm => sm.Reviews)
+                    .HasForeignKey(e => e.SupplierMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Restoration)
+                    .WithMany(r => r.Reviews)
+                    .HasForeignKey(e => e.RestorationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
             });
 
             modelBuilder.Entity<Shipping>(entity =>
@@ -862,6 +884,7 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .WithOne(si => si.Shipping)
                     .HasForeignKey(si => si.ShippingId)
                     .OnDelete(DeleteBehavior.Restrict);
+
             });
 
             modelBuilder.Entity<ShippingTag>(entity =>
@@ -1077,11 +1100,32 @@ namespace WoodenFurnitureRestoration.Data.DbContextt
                     .WithOne(i => i.SupplierMaterial)
                     .HasForeignKey(i => i.SupplierMaterialId)
                     .OnDelete(DeleteBehavior.Restrict);
-                
+
                 entity.HasMany(sm => sm.SupplierMaterialTags)
                     .WithOne(smt => smt.SupplierMaterial)
                     .HasForeignKey(smt => smt.SupplierMaterialId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.Orders)
+    .WithOne(o => o.SupplierMaterial)
+    .HasForeignKey(o => o.SupplierMaterialId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.Payments)
+                    .WithOne(p => p.SupplierMaterial)
+                    .HasForeignKey(p => p.SupplierMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.Invoices)
+                    .WithOne(i => i.SupplierMaterial)
+                    .HasForeignKey(i => i.SupplierMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.Shippings)
+                    .WithOne(s => s.SupplierMaterial)
+                    .HasForeignKey(s => s.SupplierMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
             });
 
             modelBuilder.Entity<SupplierMaterialTag>(entity =>

@@ -10,8 +10,7 @@ namespace WoodenFurnitureRestoration.Data.Repositories.Abstract
 {
     public interface IOrderDetailRepository : IRepository<OrderDetail>
     {
-
-        Task<List<OrderDetail>> GetOrderDetailsByConditionAsync(Expression<Func<OrderDetail, bool>> expression);
-
+        // Base IRepository<OrderDetail>'de tüm gerekli metodlar zaten var
+        // Custom OrderDetail-specific metodlar gerekirse buraya eklenebilir
     }
 }

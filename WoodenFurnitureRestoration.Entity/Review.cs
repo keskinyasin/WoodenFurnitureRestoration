@@ -25,6 +25,21 @@ namespace WoodenFurnitureRestoration.Entities
         [Range(1, int.MaxValue, ErrorMessage = "Ürün numarası 1'den küçük olamaz.")]
         public int ProductId { get; set; }
 
+        [Required(ErrorMessage = "Lütfen tedarikçi numarası belirtiniz.")]
+        [Display(Name = "Tedarikçi Numarası")]
+        [Range(1, int.MaxValue, ErrorMessage = "Tedarikçi numarası 1'den küçük olamaz.")]
+        public int SupplierId { get; set; }
+
+        [Required(ErrorMessage = "Lütfen tedarikçi malzeme numarası belirtiniz.")]
+        [Display(Name = "Tedarikçi Malzeme Numarası")]
+        [Range(1, int.MaxValue, ErrorMessage = "Tedarikçi malzeme numarası 1'den küçük olamaz.")]
+        public int SupplierMaterialId { get; set; }
+
+        [Required(ErrorMessage = "Lütfen restorasyon numarası belirtiniz.")]
+        [Display(Name = "Restorasyon Numarası")]
+        [Range(1, int.MaxValue, ErrorMessage = "Restorasyon numarası 1'den küçük olamaz.")]
+        public int RestorationId { get; set; }
+
         [Required(ErrorMessage = "Yorum açıklaması boş bırakılamaz.")]
         [Display(Name = "Yorum Açıklaması")]
         [StringLength(500, ErrorMessage = "Yorum açıklaması 500 karakterden uzun olamaz.")]
@@ -52,6 +67,15 @@ namespace WoodenFurnitureRestoration.Entities
 
         [JsonIgnore]
         public virtual Product Product { get; set; } = null!;
+
+        [JsonIgnore]
+        public virtual Supplier Supplier { get; set; } = null!;
+
+        [JsonIgnore]
+        public virtual SupplierMaterial SupplierMaterial { get; set; } = null!;
+
+        [JsonIgnore]
+        public virtual Restoration Restoration { get; set; } = null!;
 
         // Constructor
         public Review(
