@@ -1,13 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WoodenFurnitureRestoration.Entities;
+﻿using WoodenFurnitureRestoration.Entities;
 
-namespace WoodenFurnitureRestoration.Core.Services.Abstract
+namespace WoodenFurnitureRestoration.Core.Services.Abstract;
+
+public interface IOrderDetailService
 {
-    public interface IOrderDetailService : IService<OrderDetail>
-    {
-    }
+    // CRUD Operations
+    Task<List<OrderDetail>> GetAllAsync();
+    Task<OrderDetail?> GetByIdAsync(int id);
+    Task<int> CreateAsync(OrderDetail orderDetail);
+    Task<bool> UpdateAsync(int id, OrderDetail orderDetail);
+    Task<bool> DeleteAsync(int id);
+
+    // Custom Business Methods
+    Task<List<OrderDetail>> GetOrderDetailsByOrderAsync(int orderId);
+    Task<List<OrderDetail>> GetOrderDetailsByProductAsync(int productId);
+    Task<List<OrderDetail>> GetOrderDetailsByRestorationAsync(int restorationId);
+    Task<decimal> GetOrderTotalAsync(int orderId);
+    Task<decimal> GetLineItemTotalAsync(int orderDetailId);
+    Task<bool> UpdateQuantityAsync(int orderDetailId, int quantity);
+    Task<List<OrderDetail>> GetOrderDetailsByFiltersAsync(
+        int? orderId = null,
+        int? productId = null,
+        int? restorationId = null,
+        int? minQuantity = null,
+        int? maxQuantity = null,
+        decimal? minUnitPrice = null,
+        decimal? maxUnitPrice = null);
 }

@@ -1,13 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WoodenFurnitureRestoration.Entities;
+﻿using WoodenFurnitureRestoration.Entities;
 
-namespace WoodenFurnitureRestoration.Core.Services.Abstract
+namespace WoodenFurnitureRestoration.Core.Services.Abstract;
+
+public interface ISupplierService
 {
-    public interface ISupplierService : IService<Supplier>
-    {
-    }
+    // CRUD Operations
+    Task<List<Supplier>> GetAllAsync();
+    Task<Supplier?> GetByIdAsync(int id);
+    Task<int> CreateAsync(Supplier supplier);
+    Task<bool> UpdateAsync(int id, Supplier supplier);
+    Task<bool> DeleteAsync(int id);
+
+    // Custom Business Methods
+    Task<List<Supplier>> GetSuppliersByStatusAsync(SupplierStatus status);
+    Task<Supplier?> GetSupplierByEmailAsync(string email);
+    Task<List<Supplier>> SearchSuppliersByNameAsync(string name);
+    Task<List<Supplier>> SearchSuppliersByShopNameAsync(string shopName);
+    Task<List<Supplier>> GetSuppliersWithProductsAsync();
+    Task<bool> UpdateStatusAsync(int supplierId, SupplierStatus status);
+    Task<bool> ActivateSupplierAsync(int supplierId);
+    Task<bool> DeactivateSupplierAsync(int supplierId);
+    Task<List<Supplier>> GetActiveSupplierAsync();
+    Task<List<Supplier>> GetPendingSupplierAsync();
+    Task<double> GetAverageRatingAsync(int supplierId);
+    Task<int> GetTotalOrdersAsync(int supplierId);
+    Task<List<Supplier>> GetSuppliersByFiltersAsync(
+        string? name = null,
+        string? shopName = null,
+        string? email = null,
+        string? phone = null,
+        SupplierStatus? status = null);
 }

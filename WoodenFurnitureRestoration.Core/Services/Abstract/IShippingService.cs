@@ -1,13 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WoodenFurnitureRestoration.Entities;
+﻿using WoodenFurnitureRestoration.Entities;
 
-namespace WoodenFurnitureRestoration.Core.Services.Abstract
+namespace WoodenFurnitureRestoration.Core.Services.Abstract;
+
+public interface IShippingService
 {
-    public interface IShippingService : IService<Shipping>
-    {
-    }
+    // CRUD Operations
+    Task<List<Shipping>> GetAllAsync();
+    Task<Shipping?> GetByIdAsync(int id);
+    Task<int> CreateAsync(Shipping shipping);
+    Task<bool> UpdateAsync(int id, Shipping shipping);
+    Task<bool> DeleteAsync(int id);
+
+    // Custom Business Methods
+    Task<List<Shipping>> GetShippingsByOrderAsync(int orderId);
+    Task<List<Shipping>> GetShippingsByAddressAsync(int addressId);
+    Task<List<Shipping>> GetShippingsBySupplierAsync(int supplierId);
+    Task<List<Shipping>> GetShippingsByStatusAsync(ShippingStatus status);
+    Task<List<Shipping>> GetShippingsByTypeAsync(ShippingType type);
+    Task<List<Shipping>> GetShippingsByDateRangeAsync(DateTime startDate, DateTime endDate);
+    Task<bool> UpdateStatusAsync(int shippingId, ShippingStatus status);
+    Task<bool> MarkAsShippedAsync(int shippingId);
+    Task<bool> MarkAsDeliveredAsync(int shippingId);
+    Task<bool> CancelShippingAsync(int shippingId);
+    Task<List<Shipping>> GetPendingShippingsAsync();
+    Task<List<Shipping>> GetDeliveredShippingsAsync();
+    Task<decimal> GetTotalShippingCostByOrderAsync(int orderId);
+    Task<List<Shipping>> GetShippingsByFiltersAsync(
+        int? orderId = null,
+        int? addressId = null,
+        int? supplierId = null,
+        ShippingStatus? status = null,
+        ShippingType? type = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        decimal? minCost = null,
+        decimal? maxCost = null);
 }
