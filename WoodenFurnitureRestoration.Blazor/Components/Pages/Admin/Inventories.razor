@@ -1,0 +1,216 @@
+﻿@page "/admin/inventories"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Inventory
+@using WoodenFurnitureRestoration.Shared.DTOs.Product
+@using WoodenFurnitureRestoration.Shared.DTOs.SupplierMaterial
+@inject AuthService AuthService
+@inject InventoryService InventoryService
+@inject ProductService ProductService
+@inject SupplierMaterialService SupplierMaterialService
+@inject NavigationManager Navigation
+@inject ILogger<Inventories> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;"><div class="spinner-border text-primary" role="status"></div></div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">📦 Stok Yönetimi</h2>
+            <p class="text-muted mb-0">Toplam @inventories.Count kayıt | <strong class="text-primary">@inventories.Sum(i => i.QuantityInStock) adet</strong></p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal"><i class="bi bi-plus-circle me-2"></i> Yeni Stok</button>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-success"><div class="card-body text-center"><h4 class="text-success">@inventories.Count(i => i.QuantityInStock > 10)</h4><p class="mb-0">✅ Yeterli Stok</p></div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-warning"><div class="card-body text-center"><h4 class="text-warning">@inventories.Count(i => i.QuantityInStock > 0 && i.QuantityInStock <= 10)</h4><p class="mb-0">⚠️ Düşük Stok</p></div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-danger"><div class="card-body text-center"><h4 class="text-danger">@inventories.Count(i => i.QuantityInStock == 0)</h4><p class="mb-0">❌ Stok Yok</p></div></div>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Ürün</label>
+                    <select class="form-select" @bind="filterProductId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Ürünler</option>
+                        @foreach (var p in products)
+                        {
+                            <option value="@p.Id">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Stok Durumu</label>
+                    <select class="form-select" @bind="filterStockStatus" @bind:after="ApplyFilters">
+                        <option value="">Tümü</option>
+                        <option value="ok">✅ Yeterli (10+)</option>
+                        <option value="low">⚠️ Düşük (1-10)</option>
+                        <option value="out">❌ Stok Yok (0)</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters"><i class="bi bi-x-circle me-1"></i> Temizle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredInventories?.Count == 0)
+            {
+                <div class="text-center py-5"><i class="bi bi-box-seam text-muted" style="font-size: 4rem;"></i><p class="mt-3 text-muted fs-5">Stok kaydı bulunamadı</p></div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Ürün</th>
+                                <th>Malzeme</th>
+                                <th>Miktar</th>
+                                <th>Fiyat</th>
+                                <th>Toplam Değer</th>
+                                <th>Son Güncelleme</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var inv in filteredInventories)
+                            {
+                                <tr class="@(inv.QuantityInStock == 0 ? "table-danger" : inv.QuantityInStock <= 10 ? "table-warning" : "")">
+                                    <td><span class="badge bg-secondary">@inv.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;"><i class="bi bi-box"></i></div>
+                                            <strong>@inv.ProductName</strong>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info">@inv.SupplierMaterialName</span></td>
+                                    <td>
+                                        <span class="badge @(inv.QuantityInStock > 10 ? "bg-success" : inv.QuantityInStock > 0 ? "bg-warning text-dark" : "bg-danger") fs-6">
+                                            @inv.QuantityInStock adet
+                                        </span>
+                                    </td>
+                                    <td>₺@inv.Price.ToString("N2")</td>
+                                    <td><strong class="text-success">₺@inv.TotalAmount.ToString("N2")</strong></td>
+                                    <td><small>@inv.LastUpdate.ToString("dd MMM yyyy HH:mm")</small></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(inv))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(inv))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal" Title="@(isEditMode ? "✏️ Stok Düzenle" : "➕ Yeni Stok")" OnClose="CloseModal" OnSave="SaveInventory" IsSaving="@isSaving" ModalSize="modal-lg">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-box me-1"></i> Ürün <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editProductId" disabled="@isEditMode">
+                    <option value="0">-- Ürün Seçin --</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.Id">@p.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-layers me-1"></i> Malzeme <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editMaterialId">
+                    <option value="0">-- Malzeme Seçin --</option>
+                    @foreach (var m in materials)
+                    {
+                        <option value="@m.Id">@m.MaterialName</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Miktar <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" @bind="editQuantity" min="0" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Birim Fiyat</label>
+                <div class="input-group"><span class="input-group-text">₺</span><input type="number" step="0.01" class="form-control" @bind="editPrice" /></div>
+            </div>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Stok Sil" Message="Bu stok kaydını silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<InventoryDto> inventories = new();
+    private List<InventoryDto> filteredInventories = new();
+    private List<ProductDto> products = new();
+    private List<SupplierMaterialDto> materials = new();
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    private int filterProductId;
+    private string filterStockStatus = "";
+    private int editProductId, editMaterialId, editQuantity;
+    private decimal editPrice;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
+
+    private async Task LoadData() { isLoading = true; StateHasChanged(); inventories = await InventoryService.GetAllAsync() ?? new(); products = await ProductService.GetAllAsync() ?? new(); materials = await SupplierMaterialService.GetAllAsync() ?? new(); ApplyFilters(); isLoading = false; }
+
+    private void ApplyFilters()
+    {
+        filteredInventories = inventories;
+        if (filterProductId > 0) filteredInventories = filteredInventories.Where(i => i.ProductId == filterProductId).ToList();
+        if (filterStockStatus == "ok") filteredInventories = filteredInventories.Where(i => i.QuantityInStock > 10).ToList();
+        else if (filterStockStatus == "low") filteredInventories = filteredInventories.Where(i => i.QuantityInStock > 0 && i.QuantityInStock <= 10).ToList();
+        else if (filterStockStatus == "out") filteredInventories = filteredInventories.Where(i => i.QuantityInStock == 0).ToList();
+    }
+
+    private void ClearFilters() { filterProductId = 0; filterStockStatus = ""; ApplyFilters(); }
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
+    private void OpenEditModal(InventoryDto i) { isEditMode = true; editingId = i.Id; editProductId = i.ProductId; editMaterialId = i.SupplierMaterialId; editQuantity = i.QuantityInStock; editPrice = i.Price; showModal = true; }
+    private void CloseModal() { showModal = false; ResetForm(); }
+    private void ResetForm() { editProductId = 0; editMaterialId = 0; editQuantity = 0; editPrice = 0; }
+
+    private async Task SaveInventory() { if (editProductId == 0) { ShowToast("Uyarı", "Ürün seçin", ToastNotification.ToastType.Warning); return; } isSaving = true; StateHasChanged(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); CloseModal(); await LoadData(); isSaving = false; }
+
+    private void OpenDeleteDialog(InventoryDto i) { deleteItemId = i.Id; deleteItemName = i.ProductName; showDeleteDialog = true; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await InventoryService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
+}

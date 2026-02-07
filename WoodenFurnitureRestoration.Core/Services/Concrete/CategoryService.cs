@@ -51,8 +51,12 @@ public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategory
 
         try
         {
-            mapper.Map(category, existing);
+            // Sadece değişen alanları güncelle
+            existing.CategoryName = category.CategoryName;
+            existing.CategoryDescription = category.CategoryDescription;
+            existing.SupplierId = category.SupplierId;
             existing.UpdatedDate = DateTime.Now;
+
             await unitOfWork.CategoryRepository.UpdateAsync(existing);
             await unitOfWork.SaveChangesAsync();
             return true;
@@ -122,20 +126,19 @@ public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategory
 
     private static void ValidateCategory(Category category)
     {
+        // ✅ Sadece CategoryName zorunlu
         if (string.IsNullOrWhiteSpace(category.CategoryName))
             throw new ArgumentException("Kategori adı gereklidir.", nameof(category));
-
-        if (string.IsNullOrWhiteSpace(category.CategoryDescription))
-            throw new ArgumentException("Kategori açıklaması gereklidir.", nameof(category));
 
         if (category.CategoryName.Length > 100)
             throw new ArgumentException("Kategori adı 100 karakterden uzun olamaz.", nameof(category));
 
-        if (category.CategoryDescription.Length > 500)
+        // ✅ CategoryDescription opsiyonel - sadece doluysa kontrol et
+        if (!string.IsNullOrWhiteSpace(category.CategoryDescription) && category.CategoryDescription.Length > 500)
             throw new ArgumentException("Kategori açıklaması 500 karakterden uzun olamaz.", nameof(category));
 
-        if (category.SupplierId <= 0)
-            throw new ArgumentException("Geçerli bir tedarikçi seçilmelidir.", nameof(category));
+        // ✅ SupplierId opsiyonel - kaldırıldı
+        // Kategori tedarikçi olmadan da oluşturulabilir
     }
 
     #endregion

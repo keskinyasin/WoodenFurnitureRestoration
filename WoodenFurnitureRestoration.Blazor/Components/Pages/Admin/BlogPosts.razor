@@ -1,0 +1,425 @@
+﻿@page "/admin/blogposts"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.BlogPost
+@using WoodenFurnitureRestoration.Shared.DTOs.Category
+@inject AuthService AuthService
+@inject BlogPostService BlogPostService
+@inject CategoryService CategoryService
+@inject NavigationManager Navigation
+@inject ILogger<BlogPosts> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">📝 Blog Yazıları</h2>
+            <p class="text-muted mb-0">Toplam @blogPosts.Count yazı</p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Yazı
+        </button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Yazı ara..." @bind="searchTerm" @bind:event="oninput" @onkeyup="FilterPosts" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" @onclick="RefreshData">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Yenile
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredPosts?.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-file-text text-muted" style="font-size: 4rem;"></i>
+                    <p class="mt-3 text-muted fs-5">Blog yazısı bulunamadı</p>
+                    <button class="btn btn-primary" @onclick="OpenAddModal">
+                        <i class="bi bi-plus-circle me-2"></i> İlk Yazıyı Oluştur
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="row p-3">
+                    @foreach (var post in filteredPosts)
+                    {
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                @if (!string.IsNullOrEmpty(post.BlogImage))
+                                {
+                                    <img src="@post.BlogImage" class="card-img-top" alt="@post.BlogTitle" style="height: 180px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                        <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                    </div>
+                                }
+                                <div class="card-body">
+                                    <span class="badge bg-primary mb-2">@post.CategoryName</span>
+                                    <h5 class="card-title">@post.BlogTitle</h5>
+                                    <p class="card-text text-muted small">
+                                        @(post.BlogDescription?.Length > 100 ? post.BlogDescription.Substring(0, 100) + "..." : post.BlogDescription)
+                                    </p>
+                                    @if (!string.IsNullOrEmpty(post.BlogAuthor))
+                                    {
+                                        <p class="mb-0"><small class="text-muted"><i class="bi bi-person me-1"></i>@post.BlogAuthor</small></p>
+                                    }
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted"><i class="bi bi-calendar me-1"></i>@post.PublishedDate.ToString("dd MMM yyyy")</small>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewPost(post))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(post))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(post))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="📖 Yazı Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-xl">
+        @if (selectedPost != null)
+        {
+            <div class="row">
+                <div class="col-md-4">
+                    @if (!string.IsNullOrEmpty(selectedPost.BlogImage))
+                    {
+                        <img src="@selectedPost.BlogImage" class="img-fluid rounded mb-3" />
+                    }
+                    <p><strong>Kategori:</strong> <span class="badge bg-primary">@selectedPost.CategoryName</span></p>
+                    <p><strong>Yazar:</strong> @(selectedPost.BlogAuthor ?? "-")</p>
+                    <p><strong>Yayın Tarihi:</strong> @selectedPost.PublishedDate.ToString("dd MMMM yyyy")</p>
+                </div>
+                <div class="col-md-8">
+                    <h3>@selectedPost.BlogTitle</h3>
+                    @if (!string.IsNullOrEmpty(selectedPost.BlogDescription))
+                    {
+                        <p class="text-muted fst-italic">@selectedPost.BlogDescription</p>
+                    }
+                    <hr />
+                    <div class="blog-content">
+                        @((MarkupString)selectedPost.BlogContent)
+                    </div>
+                </div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal"
+                Title="@(isEditMode ? "✏️ Yazı Düzenle" : "➕ Yeni Yazı")"
+                OnClose="CloseModal"
+                OnSave="SavePost"
+                IsSaving="@isSaving"
+                SaveButtonText="@(isEditMode ? "💾 Güncelle" : "📝 Yayınla")"
+                HeaderClass="@(isEditMode ? "bg-warning text-dark" : "bg-primary text-white")"
+                ModalSize="modal-xl">
+
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <label class="form-label fw-bold">Başlık <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" @bind="editTitle" placeholder="Blog başlığı..." />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Kategori <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editCategoryId">
+                    <option value="0">-- Kategori Seçin --</option>
+                    @foreach (var cat in categories)
+                    {
+                        <option value="@cat.Id">@cat.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Yazar</label>
+                <input type="text" class="form-control" @bind="editAuthor" placeholder="Yazar adı..." />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Yayın Tarihi</label>
+                <input type="datetime-local" class="form-control" @bind="editPublishedDate" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Açıklama (SEO için)</label>
+            <input type="text" class="form-control" @bind="editDescription" placeholder="Kısa açıklama (max 500 karakter)..." maxlength="500" />
+            <small class="text-muted">@(editDescription?.Length ?? 0)/500 karakter</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Görsel URL</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-image"></i></span>
+                <input type="text" class="form-control" @bind="editImageUrl" placeholder="https://..." />
+            </div>
+            @if (!string.IsNullOrEmpty(editImageUrl))
+            {
+                <div class="mt-2">
+                    <img src="@editImageUrl" class="img-thumbnail" style="max-height: 100px;" />
+                </div>
+            }
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">İçerik <span class="text-danger">*</span></label>
+            <textarea class="form-control" rows="10" @bind="editContent" placeholder="Blog içeriğini buraya yazın... (HTML desteklenir)"></textarea>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog"
+                   Title="Yazı Sil"
+                   Message="Bu blog yazısını silmek istediğinizden emin misiniz?"
+                   ItemName="@deleteItemName"
+                   IsProcessing="@isDeleting"
+                   OnConfirm="ConfirmDelete"
+                   OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<BlogPostDto> blogPosts = new();
+    private List<BlogPostDto> filteredPosts = new();
+    private List<CategoryDto> categories = new();
+    private BlogPostDto? selectedPost;
+    private string searchTerm = "";
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    // Form fields
+    private string editTitle = "";
+    private string editContent = "";
+    private string editDescription = "";
+    private string editAuthor = "";
+    private string editImageUrl = "";
+    private int editCategoryId;
+    private DateTime editPublishedDate = DateTime.Now;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isChecked)
+        {
+            isChecked = true;
+            isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+            if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; }
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+        blogPosts = await BlogPostService.GetAllAsync() ?? new();
+        categories = await CategoryService.GetAllAsync() ?? new();
+        filteredPosts = blogPosts.ToList();
+        isLoading = false;
+    }
+
+    private void FilterPosts()
+    {
+        filteredPosts = string.IsNullOrWhiteSpace(searchTerm)
+            ? blogPosts.ToList()
+            : blogPosts.Where(p =>
+                p.BlogTitle.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (p.BlogDescription?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (p.BlogAuthor?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+    }
+
+    private async Task RefreshData()
+    {
+        searchTerm = "";
+        await LoadData();
+        ShowToast("Başarılı", "Veriler yenilendi", ToastNotification.ToastType.Success);
+    }
+
+    private void ViewPost(BlogPostDto post)
+    {
+        selectedPost = post;
+        showViewModal = true;
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        editingId = 0;
+        ResetForm();
+        showModal = true;
+    }
+
+    private void OpenEditModal(BlogPostDto post)
+    {
+        isEditMode = true;
+        editingId = post.Id;
+        editTitle = post.BlogTitle;
+        editContent = post.BlogContent;
+        editDescription = post.BlogDescription ?? "";
+        editAuthor = post.BlogAuthor ?? "";
+        editImageUrl = post.BlogImage ?? "";
+        editCategoryId = post.CategoryId;
+        editPublishedDate = post.PublishedDate;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        ResetForm();
+    }
+
+    private void ResetForm()
+    {
+        editTitle = "";
+        editContent = "";
+        editDescription = "";
+        editAuthor = "";
+        editImageUrl = "";
+        editCategoryId = 0;
+        editPublishedDate = DateTime.Now;
+    }
+
+    private async Task SavePost()
+    {
+        if (string.IsNullOrWhiteSpace(editTitle) || string.IsNullOrWhiteSpace(editContent) || editCategoryId == 0)
+        {
+            ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning);
+            return;
+        }
+
+        isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                var dto = new UpdateBlogPostDto
+                {
+                    BlogTitle = editTitle,
+                    BlogContent = editContent,
+                    BlogDescription = editDescription,
+                    BlogAuthor = editAuthor,
+                    BlogImage = editImageUrl,
+                    CategoryId = editCategoryId,
+                    PublishedDate = editPublishedDate
+                };
+                success = await BlogPostService.UpdateAsync(editingId, dto);
+            }
+            else
+            {
+                var dto = new CreateBlogPostDto
+                {
+                    BlogTitle = editTitle,
+                    BlogContent = editContent,
+                    BlogDescription = editDescription,
+                    BlogAuthor = editAuthor,
+                    BlogImage = editImageUrl,
+                    CategoryId = editCategoryId,
+                    PublishedDate = editPublishedDate
+                };
+                success = await BlogPostService.CreateAsync(dto);
+            }
+
+            if (success)
+            {
+                CloseModal();
+                await LoadData();
+                ShowToast("Başarılı", isEditMode ? "Yazı güncellendi" : "Yazı yayınlandı", ToastNotification.ToastType.Success);
+            }
+            else
+            {
+                ShowToast("Hata", "İşlem başarısız", ToastNotification.ToastType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Blog yazısı kaydetme hatası");
+            ShowToast("Hata", "Bir hata oluştu", ToastNotification.ToastType.Error);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void OpenDeleteDialog(BlogPostDto post)
+    {
+        deleteItemId = post.Id;
+        deleteItemName = post.BlogTitle;
+        showDeleteDialog = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true;
+        StateHasChanged();
+
+        if (await BlogPostService.DeleteAsync(deleteItemId))
+        {
+            showDeleteDialog = false;
+            await LoadData();
+            ShowToast("Başarılı", "Yazı silindi", ToastNotification.ToastType.Success);
+        }
+        else
+        {
+            ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
+        }
+
+        isDeleting = false;
+    }
+
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type)
+    {
+        toastTitle = title;
+        toastMessage = msg;
+        toastType = type;
+        showToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        showToast = false;
+        StateHasChanged();
+    }
+}

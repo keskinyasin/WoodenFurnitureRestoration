@@ -1,17 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WoodenFurnitureRestoration.Shared.DTOs.Category
+namespace WoodenFurnitureRestoration.Shared.DTOs.Category;
+
+public class CreateCategoryDto
 {
-    public class CreateCategoryDto
-    {
-        [Required(ErrorMessage = "Kategori adı zorunludur")]
-        [StringLength(100, MinimumLength = 3)]
-        public string Name { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Kategori adı zorunludur")]
+    [StringLength(100, MinimumLength = 3)]
+    public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Açıklama zorunludur")]
-        [StringLength(500)]
-        public string Description { get; set; } = string.Empty;
+    [StringLength(500)]
+    public string Description { get; set; } = string.Empty;
 
-        
-    }
+    // Opsiyonel yap (nullable)
+    public int? SupplierId { get; set; }
 }

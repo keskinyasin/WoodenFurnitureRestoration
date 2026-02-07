@@ -1,0 +1,405 @@
+﻿@page "/admin/payments"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Payment
+@using WoodenFurnitureRestoration.Shared.DTOs.Order
+@using WoodenFurnitureRestoration.Shared.DTOs.Supplier
+@inject AuthService AuthService
+@inject PaymentService PaymentService
+@inject OrderService OrderService
+@inject SupplierService SupplierService
+@inject NavigationManager Navigation
+@inject ILogger<Payments> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">💳 Ödemeler Yönetimi</h2>
+            <p class="text-muted mb-0">
+                Toplam @payments.Count ödeme |
+                <strong class="text-success">₺@payments.Sum(p => p.PaymentAmount).ToString("N2")</strong>
+            </p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Ödeme
+        </button>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>₺@payments.Where(p => p.PaymentStatus == "Completed").Sum(p => p.PaymentAmount).ToString("N2")</h4>
+                    <p class="mb-0">✅ Tamamlanan (@payments.Count(p => p.PaymentStatus == "Completed"))</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h4>₺@payments.Where(p => p.PaymentStatus == "Pending").Sum(p => p.PaymentAmount).ToString("N2")</h4>
+                    <p class="mb-0">⏳ Bekleyen (@payments.Count(p => p.PaymentStatus == "Pending"))</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h4>₺@payments.Where(p => p.PaymentStatus == "Failed").Sum(p => p.PaymentAmount).ToString("N2")</h4>
+                    <p class="mb-0">❌ Başarısız (@payments.Count(p => p.PaymentStatus == "Failed"))</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Sipariş</label>
+                    <select class="form-select" @bind="filterOrderId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Siparişler</option>
+                        @foreach (var o in orders)
+                        {
+                            <option value="@o.Id">#@o.Id - @o.CustomerName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tedarikçi</label>
+                    <select class="form-select" @bind="filterSupplierId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Tedarikçiler</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.Id">@s.SupplierName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ödeme Yöntemi</label>
+                    <select class="form-select" @bind="filterMethod" @bind:after="ApplyFilters">
+                        <option value="">Tümü</option>
+                        <option value="Credit Card">💳 Kredi Kartı</option>
+                        <option value="Cash">💵 Nakit</option>
+                        <option value="Transfer">🏦 Havale/EFT</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Durum</label>
+                    <select class="form-select" @bind="filterStatus" @bind:after="ApplyFilters">
+                        <option value="">Tümü</option>
+                        <option value="Completed">Tamamlandı</option>
+                        <option value="Pending">Bekliyor</option>
+                        <option value="Failed">Başarısız</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredPayments?.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-credit-card text-muted" style="font-size: 4rem;"></i>
+                    <p class="mt-3 text-muted fs-5">Ödeme bulunamadı</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Sipariş</th>
+                                <th>Tedarikçi</th>
+                                <th>Tutar</th>
+                                <th>Yöntem</th>
+                                <th>Durum</th>
+                                <th>Tarih</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var payment in filteredPayments)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@payment.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                                <i class="bi bi-cart"></i>
+                                            </div>
+                                            <div>
+                                                <strong>Sipariş #@payment.OrderId</strong>
+                                                <br /><small class="text-muted">@GetOrderCustomer(payment.OrderId)</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-building me-1"></i>@payment.SupplierName
+                                        </span>
+                                    </td>
+                                    <td><strong class="text-success fs-5">₺@payment.PaymentAmount.ToString("N2")</strong></td>
+                                    <td>
+                                        <span class="badge @GetMethodBadge(payment.PaymentMethod)">
+                                            <i class="bi @GetMethodIcon(payment.PaymentMethod) me-1"></i>@payment.PaymentMethod
+                                        </span>
+                                    </td>
+                                    <td><span class="badge @GetStatusBadge(payment.PaymentStatus)">@GetStatusText(payment.PaymentStatus)</span></td>
+                                    <td><small>@payment.PaymentDate.ToString("dd MMM yyyy HH:mm")</small></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewPayment(payment))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(payment))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(payment))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="💳 Ödeme Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-lg">
+        @if (selectedPayment != null)
+        {
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <i class="bi bi-cart me-1"></i> Sipariş Bilgisi
+                        </div>
+                        <div class="card-body">
+                            <h5>Sipariş #@selectedPayment.OrderId</h5>
+                            <p class="mb-0">Müşteri: @GetOrderCustomer(selectedPayment.OrderId)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-building me-1"></i> Tedarikçi
+                        </div>
+                        <div class="card-body">
+                            <h5>@selectedPayment.SupplierName</h5>
+                            <p class="mb-0">ID: #@selectedPayment.SupplierId</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="text-muted">Tutar</h6>
+                            <h2 class="text-success">₺@selectedPayment.PaymentAmount.ToString("N2")</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="text-muted">Yöntem</h6>
+                            <span class="badge @GetMethodBadge(selectedPayment.PaymentMethod) fs-6">@selectedPayment.PaymentMethod</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="text-muted">Durum</h6>
+                            <span class="badge @GetStatusBadge(selectedPayment.PaymentStatus) fs-5">@GetStatusText(selectedPayment.PaymentStatus)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal"
+                Title="@(isEditMode ? "✏️ Ödeme Düzenle" : "➕ Yeni Ödeme")"
+                OnClose="CloseModal"
+                OnSave="SavePayment"
+                IsSaving="@isSaving"
+                ModalSize="modal-lg">
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-cart me-1"></i> Sipariş <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editOrderId">
+                    <option value="0">-- Sipariş Seçin --</option>
+                    @foreach (var o in orders)
+                    {
+                        <option value="@o.Id">#@o.Id - @o.CustomerName (₺@o.TotalAmount.ToString("N2"))</option>
+                    }
+                </select>
+                @if (editOrderId > 0)
+                {
+                    var ord = orders.FirstOrDefault(o => o.Id == editOrderId);
+                    @if (ord != null)
+                    {
+                        <div class="alert alert-info mt-2 mb-0 py-2">
+                            <small><strong>@ord.CustomerName</strong> - ₺@ord.TotalAmount.ToString("N2")</small>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-building me-1"></i> Tedarikçi <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editSupplierId">
+                    <option value="0">-- Tedarikçi Seçin --</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.Id">@s.SupplierName</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Tutar <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text">₺</span>
+                    <input type="number" step="0.01" class="form-control" @bind="editAmount" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Ödeme Yöntemi <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editMethod">
+                    <option value="Credit Card">💳 Kredi Kartı</option>
+                    <option value="Cash">💵 Nakit</option>
+                    <option value="Transfer">🏦 Havale/EFT</option>
+                    <option value="Check">📄 Çek</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Durum <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editStatus">
+                    <option value="Pending">⏳ Bekliyor</option>
+                    <option value="Completed">✅ Tamamlandı</option>
+                    <option value="Failed">❌ Başarısız</option>
+                    <option value="Refunded">↩️ İade</option>
+                </select>
+            </div>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Ödeme Sil" Message="Bu ödeme kaydını silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<PaymentDto> payments = new();
+    private List<PaymentDto> filteredPayments = new();
+    private List<OrderDto> orders = new();
+    private List<SupplierDto> suppliers = new();
+    private PaymentDto? selectedPayment;
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    // Filters
+    private int filterOrderId;
+    private int filterSupplierId;
+    private string filterMethod = "";
+    private string filterStatus = "";
+
+    // Form fields
+    private int editOrderId;
+    private int editSupplierId;
+    private decimal editAmount;
+    private string editMethod = "Credit Card";
+    private string editStatus = "Pending";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isChecked)
+        {
+            isChecked = true;
+            isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+            if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; }
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+        payments = await PaymentService.GetAllAsync() ?? new();
+        orders = await OrderService.GetAllAsync() ?? new();
+        suppliers = await SupplierService.GetAllAsync() ?? new();
+        ApplyFilters();
+        isLoading = false;
+    }
+
+    private void ApplyFilters()
+    {
+        filteredPayments = payments;
+        if (filterOrderId > 0) filteredPayments = filteredPayments.Where(p => p.OrderId == filterOrderId).ToList();
+        if (filterSupplierId > 0) filteredPayments = filteredPayments.Where(p => p.SupplierId == filterSupplierId).ToList();
+        if (!string.IsNullOrWhiteSpace(filterMethod)) filteredPayments = filteredPayments.Where(p => p.PaymentMethod == filterMethod).ToList();
+        if (!string.IsNullOrWhiteSpace(filterStatus)) filteredPayments = filteredPayments.Where(p => p.PaymentStatus == filterStatus).ToList();
+    }
+
+    private string GetOrderCustomer(int orderId) => orders.FirstOrDefault(o => o.Id == orderId)?.CustomerName ?? "Bilinmiyor";
+
+    private void ViewPayment(PaymentDto p) { selectedPayment = p; showViewModal = true; }
+
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
+    private void OpenEditModal(PaymentDto p) { isEditMode = true; editingId = p.Id; editOrderId = p.OrderId; editSupplierId = p.SupplierId; editAmount = p.PaymentAmount; editMethod = p.PaymentMethod; editStatus = p.PaymentStatus; showModal = true; }
+    private void CloseModal() { showModal = false; ResetForm(); }
+    private void ResetForm() { editOrderId = 0; editSupplierId = 0; editAmount = 0; editMethod = "Credit Card"; editStatus = "Pending"; }
+
+    private async Task SavePayment()
+    {
+        if (editOrderId == 0 || editSupplierId == 0 || editAmount <= 0)
+        {
+            ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning);
+            return;
+        }
+        isSaving = true; StateHasChanged();
+        ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success);
+        CloseModal(); await LoadData(); isSaving = false;
+    }
+
+    private void OpenDeleteDialog(PaymentDto p) { deleteItemId = p.Id; deleteItemName = $"Ödeme #{p.Id} - ₺{p.PaymentAmount:N2}"; showDeleteDialog = true; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await PaymentService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+
+    private string GetStatusBadge(string? s) => s?.ToLower() switch { "completed" => "bg-success", "pending" => "bg-warning text-dark", "failed" => "bg-danger", "refunded" => "bg-info", _ => "bg-secondary" };
+    private string GetStatusText(string? s) => s?.ToLower() switch { "completed" => "Tamamlandı", "pending" => "Bekliyor", "failed" => "Başarısız", "refunded" => "İade", _ => s ?? "?" };
+    private string GetMethodBadge(string? m) => m?.ToLower() switch { "credit card" => "bg-primary", "cash" => "bg-success", "transfer" => "bg-info", _ => "bg-secondary" };
+    private string GetMethodIcon(string? m) => m?.ToLower() switch { "credit card" => "bi-credit-card", "cash" => "bi-cash", "transfer" => "bi-bank", _ => "bi-wallet" };
+
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
+}

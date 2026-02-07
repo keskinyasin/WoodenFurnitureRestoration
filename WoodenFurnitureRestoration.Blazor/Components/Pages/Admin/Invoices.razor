@@ -1,0 +1,235 @@
+﻿@page "/admin/invoices"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Invoice
+@using WoodenFurnitureRestoration.Shared.DTOs.Order
+@using WoodenFurnitureRestoration.Shared.DTOs.Supplier
+@inject AuthService AuthService
+@inject InvoiceService InvoiceService
+@inject OrderService OrderService
+@inject SupplierService SupplierService
+@inject NavigationManager Navigation
+@inject ILogger<Invoices> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;"><div class="spinner-border text-primary" role="status"></div></div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">🧾 Faturalar</h2>
+            <p class="text-muted mb-0">Toplam @invoices.Count fatura | <strong class="text-success">₺@invoices.Sum(i => i.NetAmount).ToString("N2")</strong></p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal"><i class="bi bi-plus-circle me-2"></i> Yeni Fatura</button>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white"><div class="card-body text-center"><h4>₺@invoices.Sum(i => i.TotalAmount).ToString("N2")</h4><p class="mb-0">Toplam Tutar</p></div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark"><div class="card-body text-center"><h4>₺@invoices.Sum(i => i.Discount).ToString("N2")</h4><p class="mb-0">Toplam İndirim</p></div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white"><div class="card-body text-center"><h4>₺@invoices.Sum(i => i.NetAmount).ToString("N2")</h4><p class="mb-0">Net Tutar</p></div></div>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Sipariş</label>
+                    <select class="form-select" @bind="filterOrderId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Siparişler</option>
+                        @foreach (var o in orders)
+                        {
+                            <option value="@o.Id">#@o.Id - @o.CustomerName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tedarikçi</label>
+                    <select class="form-select" @bind="filterSupplierId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Tedarikçiler</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.Id">@s.SupplierName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters"><i class="bi bi-x-circle me-1"></i> Temizle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredInvoices?.Count == 0)
+            {
+                <div class="text-center py-5"><i class="bi bi-receipt text-muted" style="font-size: 4rem;"></i><p class="mt-3 text-muted fs-5">Fatura bulunamadı</p></div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Sipariş</th>
+                                <th>Tedarikçi</th>
+                                <th>Toplam</th>
+                                <th>İndirim</th>
+                                <th>Net</th>
+                                <th>Tarih</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var invoice in filteredInvoices)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@invoice.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;"><i class="bi bi-cart"></i></div>
+                                            <div><strong>Sipariş #@invoice.OrderId</strong><br /><small class="text-muted">@GetOrderCustomer(invoice.OrderId)</small></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-success"><i class="bi bi-building me-1"></i>@invoice.SupplierName</span></td>
+                                    <td>₺@invoice.TotalAmount.ToString("N2")</td>
+                                    <td><span class="text-danger">-₺@invoice.Discount.ToString("N2")</span></td>
+                                    <td><strong class="text-success fs-5">₺@invoice.NetAmount.ToString("N2")</strong></td>
+                                    <td><small>@invoice.InvoiceDate.ToString("dd MMM yyyy")</small></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewInvoice(invoice))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-secondary" title="Yazdır"><i class="bi bi-printer"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(invoice))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(invoice))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="🧾 Fatura Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-lg">
+        @if (selectedInvoice != null)
+        {
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-info"><div class="card-header bg-info text-white"><i class="bi bi-cart me-1"></i> Sipariş</div><div class="card-body"><h5>Sipariş #@selectedInvoice.OrderId</h5><p class="mb-0">Müşteri: @GetOrderCustomer(selectedInvoice.OrderId)</p></div></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-success"><div class="card-header bg-success text-white"><i class="bi bi-building me-1"></i> Tedarikçi</div><div class="card-body"><h5>@selectedInvoice.SupplierName</h5></div></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6 class="text-muted">Toplam</h6><h4>₺@selectedInvoice.TotalAmount.ToString("N2")</h4></div></div></div>
+                <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6 class="text-muted">İndirim</h6><h4 class="text-danger">-₺@selectedInvoice.Discount.ToString("N2")</h4></div></div></div>
+                <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6 class="text-muted">Net</h6><h3 class="text-success">₺@selectedInvoice.NetAmount.ToString("N2")</h3></div></div></div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal" Title="@(isEditMode ? "✏️ Fatura Düzenle" : "➕ Yeni Fatura")" OnClose="CloseModal" OnSave="SaveInvoice" IsSaving="@isSaving" ModalSize="modal-lg">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-cart me-1"></i> Sipariş <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editOrderId">
+                    <option value="0">-- Sipariş Seçin --</option>
+                    @foreach (var o in orders)
+                    {
+                        <option value="@o.Id">#@o.Id - @o.CustomerName (₺@o.TotalAmount.ToString("N2"))</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-building me-1"></i> Tedarikçi <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editSupplierId">
+                    <option value="0">-- Tedarikçi Seçin --</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.Id">@s.SupplierName</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Toplam Tutar <span class="text-danger">*</span></label>
+                <div class="input-group"><span class="input-group-text">₺</span><input type="number" step="0.01" class="form-control" @bind="editTotalAmount" @oninput="CalculateNet" /></div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">İndirim</label>
+                <div class="input-group"><span class="input-group-text">₺</span><input type="number" step="0.01" class="form-control" @bind="editDiscount" @oninput="CalculateNet" /></div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Net Tutar</label>
+                <div class="input-group"><span class="input-group-text">₺</span><input type="number" class="form-control bg-light" value="@((editTotalAmount - editDiscount).ToString("N2"))" readonly /></div>
+            </div>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Fatura Sil" Message="Bu faturayı silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<InvoiceDto> invoices = new();
+    private List<InvoiceDto> filteredInvoices = new();
+    private List<OrderDto> orders = new();
+    private List<SupplierDto> suppliers = new();
+    private InvoiceDto? selectedInvoice;
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    private int filterOrderId, filterSupplierId;
+    private int editOrderId, editSupplierId;
+    private decimal editTotalAmount, editDiscount;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
+
+    private async Task LoadData() { isLoading = true; StateHasChanged(); invoices = await InvoiceService.GetAllAsync() ?? new(); orders = await OrderService.GetAllAsync() ?? new(); suppliers = await SupplierService.GetAllAsync() ?? new(); ApplyFilters(); isLoading = false; }
+
+    private void ApplyFilters() { filteredInvoices = invoices; if (filterOrderId > 0) filteredInvoices = filteredInvoices.Where(i => i.OrderId == filterOrderId).ToList(); if (filterSupplierId > 0) filteredInvoices = filteredInvoices.Where(i => i.SupplierId == filterSupplierId).ToList(); }
+    private void ClearFilters() { filterOrderId = 0; filterSupplierId = 0; ApplyFilters(); }
+    private void CalculateNet() { }
+    private string GetOrderCustomer(int id) => orders.FirstOrDefault(o => o.Id == id)?.CustomerName ?? "";
+
+    private void ViewInvoice(InvoiceDto i) { selectedInvoice = i; showViewModal = true; }
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
+    private void OpenEditModal(InvoiceDto i) { isEditMode = true; editingId = i.Id; editOrderId = i.OrderId; editSupplierId = i.SupplierId; editTotalAmount = i.TotalAmount; editDiscount = i.Discount; showModal = true; }
+    private void CloseModal() { showModal = false; ResetForm(); }
+    private void ResetForm() { editOrderId = 0; editSupplierId = 0; editTotalAmount = 0; editDiscount = 0; }
+
+    private async Task SaveInvoice() { if (editOrderId == 0 || editSupplierId == 0) { ShowToast("Uyarı", "Zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; } isSaving = true; StateHasChanged(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); CloseModal(); await LoadData(); isSaving = false; }
+
+    private void OpenDeleteDialog(InvoiceDto i) { deleteItemId = i.Id; deleteItemName = $"Fatura #{i.Id}"; showDeleteDialog = true; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await InvoiceService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
+}

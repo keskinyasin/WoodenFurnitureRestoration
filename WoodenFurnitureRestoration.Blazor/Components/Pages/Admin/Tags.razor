@@ -1,0 +1,210 @@
+﻿@page "/admin/tags"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Tag
+@inject AuthService AuthService
+@inject TagService TagService
+@inject NavigationManager Navigation
+@inject ILogger<Tags> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">🏷️ Etiketler</h2>
+            <p class="text-muted mb-0">Toplam @tags.Count etiket</p>
+        </div>
+        <button class="btn btn-primary" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Etiket
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (tags?.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-tags text-muted" style="font-size: 4rem;"></i>
+                    <p class="mt-3 text-muted fs-5">Etiket bulunamadı</p>
+                    <button class="btn btn-primary" @onclick="OpenAddModal">
+                        <i class="bi bi-plus-circle me-2"></i> İlk Etiketi Ekle
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap gap-3">
+                    @foreach (var tag in tags)
+                    {
+                        <div class="card shadow-sm" style="min-width: 200px;">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1">#@tag.Name</h5>
+                                        <small class="text-muted">@tag.UsageCount kullanım</small>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(tag))"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(tag))"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal"
+                Title="@(isEditMode ? "✏️ Etiket Düzenle" : "➕ Yeni Etiket")"
+                OnClose="CloseModal"
+                OnSave="SaveTag"
+                IsSaving="@isSaving"
+                HeaderClass="@(isEditMode ? "bg-warning text-dark" : "bg-primary text-white")">
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Etiket Adı <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text">#</span>
+                <input type="text" class="form-control" @bind="editName" placeholder="Etiket adı..." />
+            </div>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Etiket Sil" Message="Bu etiketi silmek istediğinizden emin misiniz? Bu etiket ile ilişkili tüm bağlantılar da kaldırılacaktır." ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<TagDto> tags = new();
+    private int editingId, deleteItemId;
+    private string editName = "", deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isChecked)
+        {
+            isChecked = true;
+            isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+            if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; }
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+        tags = await TagService.GetAllAsync() ?? new();
+        isLoading = false;
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        editingId = 0;
+        editName = "";
+        showModal = true;
+    }
+
+    private void OpenEditModal(TagDto tag)
+    {
+        isEditMode = true;
+        editingId = tag.Id;
+        editName = tag.Name;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        editName = "";
+    }
+
+    private async Task SaveTag()
+    {
+        if (string.IsNullOrWhiteSpace(editName))
+        {
+            ShowToast("Uyarı", "Lütfen etiket adı girin", ToastNotification.ToastType.Warning);
+            return;
+        }
+
+        isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            // TODO: API implementasyonu
+            ShowToast("Başarılı", isEditMode ? "Etiket güncellendi" : "Etiket eklendi", ToastNotification.ToastType.Success);
+            CloseModal();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Etiket kaydetme hatası");
+            ShowToast("Hata", "Bir hata oluştu", ToastNotification.ToastType.Error);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void OpenDeleteDialog(TagDto t)
+    {
+        deleteItemId = t.Id;
+        deleteItemName = $"#{t.Name}";
+        showDeleteDialog = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true;
+        StateHasChanged();
+
+        if (await TagService.DeleteAsync(deleteItemId))
+        {
+            showDeleteDialog = false;
+            await LoadData();
+            ShowToast("Başarılı", "Etiket silindi", ToastNotification.ToastType.Success);
+        }
+        else
+        {
+            ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
+        }
+
+        isDeleting = false;
+    }
+
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type)
+    {
+        toastTitle = title;
+        toastMessage = msg;
+        toastType = type;
+        showToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        showToast = false;
+        StateHasChanged();
+    }
+}

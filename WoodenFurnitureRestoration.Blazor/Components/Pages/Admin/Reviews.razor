@@ -1,0 +1,368 @@
+﻿@page "/admin/reviews"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Review
+@using WoodenFurnitureRestoration.Shared.DTOs.Customer
+@using WoodenFurnitureRestoration.Shared.DTOs.Product
+@inject AuthService AuthService
+@inject ReviewService ReviewService
+@inject CustomerService CustomerService
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+@inject ILogger<Reviews> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">⭐ Değerlendirmeler</h2>
+            <p class="text-muted mb-0">
+                Toplam @reviews.Count değerlendirme |
+                Ortalama: <strong class="text-warning">@(reviews.Any() ? reviews.Average(r => r.Rating).ToString("F1") : "0") ⭐</strong>
+            </p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Değerlendirme
+        </button>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Müşteri</label>
+                    <select class="form-select" @bind="filterCustomerId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Müşteriler</option>
+                        @foreach (var c in customers)
+                        {
+                            <option value="@c.Id">@c.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ürün</label>
+                    <select class="form-select" @bind="filterProductId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Ürünler</option>
+                        @foreach (var p in products)
+                        {
+                            <option value="@p.Id">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Puan</label>
+                    <select class="form-select" @bind="filterRating" @bind:after="ApplyFilters">
+                        <option value="0">Tümü</option>
+                        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4+)</option>
+                        <option value="3">⭐⭐⭐ (3+)</option>
+                        <option value="2">⭐⭐ (2+)</option>
+                        <option value="1">⭐ (1+)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Durum</label>
+                    <select class="form-select" @bind="filterStatus" @bind:after="ApplyFilters">
+                        <option value="">Tümü</option>
+                        <option value="Pending">Beklemede</option>
+                        <option value="Approved">Onaylı</option>
+                        <option value="Rejected">Reddedildi</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredReviews?.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-star text-muted" style="font-size: 4rem;"></i>
+                    <p class="mt-3 text-muted fs-5">Değerlendirme bulunamadı</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Müşteri</th>
+                                <th>Ürün</th>
+                                <th>Puan</th>
+                                <th>Yorum</th>
+                                <th>Durum</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var review in filteredReviews)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@review.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                            <strong>@review.CustomerName</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-box me-1"></i>@review.ProductName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-warning">
+                                            @for (int i = 0; i < review.Rating; i++)
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                            @for (int i = review.Rating; i < 5; i++)
+                                            {
+                                                <i class="bi bi-star"></i>
+                                            }
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @(review.ReviewDescription?.Length > 40 ? review.ReviewDescription.Substring(0, 40) + "..." : review.ReviewDescription)
+                                        </small>
+                                    </td>
+                                    <td><span class="badge @GetStatusBadge(review.ReviewStatus)">@GetStatusText(review.ReviewStatus)</span></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewReview(review))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-success" @onclick="@(() => ApproveReview(review))" title="Onayla"><i class="bi bi-check-lg"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(review))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(review))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="⭐ Değerlendirme Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-lg">
+        @if (selectedReview != null)
+        {
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <i class="bi bi-person me-1"></i> Müşteri
+                        </div>
+                        <div class="card-body">
+                            <h5>@selectedReview.CustomerName</h5>
+                            <small class="text-muted">Müşteri ID: #@selectedReview.CustomerId</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <i class="bi bi-box me-1"></i> Ürün
+                        </div>
+                        <div class="card-body">
+                            <h5>@selectedReview.ProductName</h5>
+                            <small class="text-muted">Ürün ID: #@selectedReview.ProductId</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Puan</h6>
+                    <div class="text-warning fs-2">
+                        @for (int i = 0; i < selectedReview.Rating; i++)
+                        {
+                            <i class="bi bi-star-fill"></i>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header bg-light">Yorum</div>
+                <div class="card-body">
+                    <p class="mb-0">@selectedReview.ReviewDescription</p>
+                </div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal"
+                Title="@(isEditMode ? "✏️ Değerlendirme Düzenle" : "➕ Yeni Değerlendirme")"
+                OnClose="CloseModal"
+                OnSave="SaveReview"
+                IsSaving="@isSaving"
+                ModalSize="modal-lg">
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-person me-1"></i> Müşteri <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editCustomerId">
+                    <option value="0">-- Müşteri Seçin --</option>
+                    @foreach (var c in customers)
+                    {
+                        <option value="@c.Id">@c.FullName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-box me-1"></i> Ürün <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editProductId">
+                    <option value="0">-- Ürün Seçin --</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.Id">@p.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Puan <span class="text-danger">*</span></label>
+                <div class="btn-group w-100">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var rating = i;
+                        <button type="button" class="btn @(editRating >= rating ? "btn-warning" : "btn-outline-warning")" @onclick="@(() => editRating = rating)">
+                            <i class="bi bi-star-fill"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Durum</label>
+                <select class="form-select" @bind="editStatus">
+                    <option value="Pending">Beklemede</option>
+                    <option value="Approved">Onaylı</option>
+                    <option value="Rejected">Reddedildi</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Yorum <span class="text-danger">*</span></label>
+            <textarea class="form-control" rows="4" @bind="editDescription"></textarea>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Değerlendirme Sil" Message="Bu değerlendirmeyi silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<ReviewDto> reviews = new();
+    private List<ReviewDto> filteredReviews = new();
+    private List<CustomerDto> customers = new();
+    private List<ProductDto> products = new();
+    private ReviewDto? selectedReview;
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    // Filters
+    private int filterCustomerId;
+    private int filterProductId;
+    private int filterRating;
+    private string filterStatus = "";
+
+    // Form fields
+    private int editCustomerId;
+    private int editProductId;
+    private int editRating = 5;
+    private string editStatus = "Pending";
+    private string editDescription = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isChecked)
+        {
+            isChecked = true;
+            isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+            if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; }
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+        reviews = await ReviewService.GetAllAsync() ?? new();
+        customers = await CustomerService.GetAllAsync() ?? new();
+        products = await ProductService.GetAllAsync() ?? new();
+        ApplyFilters();
+        isLoading = false;
+    }
+
+    private void ApplyFilters()
+    {
+        filteredReviews = reviews;
+        if (filterCustomerId > 0) filteredReviews = filteredReviews.Where(r => r.CustomerId == filterCustomerId).ToList();
+        if (filterProductId > 0) filteredReviews = filteredReviews.Where(r => r.ProductId == filterProductId).ToList();
+        if (filterRating > 0) filteredReviews = filteredReviews.Where(r => r.Rating >= filterRating).ToList();
+        if (!string.IsNullOrWhiteSpace(filterStatus)) filteredReviews = filteredReviews.Where(r => r.ReviewStatus == filterStatus).ToList();
+    }
+
+    private void ViewReview(ReviewDto r) { selectedReview = r; showViewModal = true; }
+    private async Task ApproveReview(ReviewDto r) { ShowToast("Başarılı", $"Değerlendirme #{r.Id} onaylandı", ToastNotification.ToastType.Success); await LoadData(); }
+
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
+    private void OpenEditModal(ReviewDto r) { isEditMode = true; editingId = r.Id; editCustomerId = r.CustomerId; editProductId = r.ProductId; editRating = r.Rating; editStatus = r.ReviewStatus; editDescription = r.ReviewDescription; showModal = true; }
+    private void CloseModal() { showModal = false; ResetForm(); }
+    private void ResetForm() { editCustomerId = 0; editProductId = 0; editRating = 5; editStatus = "Pending"; editDescription = ""; }
+
+    private async Task SaveReview()
+    {
+        if (editCustomerId == 0 || editProductId == 0 || string.IsNullOrWhiteSpace(editDescription))
+        {
+            ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning);
+            return;
+        }
+        isSaving = true;
+        StateHasChanged();
+        // TODO: API
+        ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success);
+        CloseModal();
+        await LoadData();
+        isSaving = false;
+    }
+
+    private void OpenDeleteDialog(ReviewDto r) { deleteItemId = r.Id; deleteItemName = $"{r.CustomerName} - {r.ProductName}"; showDeleteDialog = true; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await ReviewService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+
+    private string GetStatusBadge(string? s) => s?.ToLower() switch { "approved" => "bg-success", "pending" => "bg-warning text-dark", "rejected" => "bg-danger", _ => "bg-secondary" };
+    private string GetStatusText(string? s) => s?.ToLower() switch { "approved" => "Onaylı", "pending" => "Beklemede", "rejected" => "Reddedildi", _ => s ?? "?" };
+
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
+}

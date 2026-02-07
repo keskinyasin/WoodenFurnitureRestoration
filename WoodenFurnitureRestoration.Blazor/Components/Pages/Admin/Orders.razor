@@ -4,115 +4,479 @@
 @attribute [AuthorizeAdmin]
 @layout AdminLayout
 @using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
 @using WoodenFurnitureRestoration.Shared.DTOs.Order
+@using WoodenFurnitureRestoration.Shared.DTOs.Customer
+@using WoodenFurnitureRestoration.Shared.DTOs.Supplier
+@using WoodenFurnitureRestoration.Shared.DTOs.SupplierMaterial
 @inject AuthService AuthService
 @inject OrderService OrderService
+@inject CustomerService CustomerService
+@inject SupplierService SupplierService
+@inject SupplierMaterialService SupplierMaterialService
 @inject NavigationManager Navigation
 @inject ILogger<Orders> Logger
 
 @if (!isAuthenticated)
 {
-    <!-- ✅ Boş -->
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
 }
 else
 {
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <h2>📝 Siparişler Yönetimi</h2>
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
 
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Siparişler (@orders.Count)</h5>
-                    </div>
-                    <div class="card-body">
-                        @if (isLoading)
-                        {
-                            <div class="spinner-border"></div>
-                            <p>⏳ Yükleniyor...</p>
-                        }
-                        else if (orders?.Count == 0)
-                        {
-                            <p class="text-muted">📭 Sipariş yok</p>
-                        }
-                        else
-                        {
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Müşteri</th>
-                                        <th>Toplam Tutar</th>
-                                        <th>Durum</th>
-                                        <th>Oluşturulma</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var order in orders)
-                                    {
-                                        <tr>
-                                            <td>@order.Id</td>
-                                            <td>@order.CustomerName</td>
-                                            <td>₺@order.TotalAmount</td>
-                                            <td>
-                                                <span class="badge bg-info">@order.Status</span>
-                                            </td>
-                                            <td>@order.CreatedAt.ToString("dd/MM/yyyy")</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info me-2">👁️ Görüntüle</button>
-                                                <button class="btn btn-sm btn-warning me-2">✏️ Güncelle</button>
-                                                <button class="btn btn-sm btn-danger">🗑️ Sil</button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        }
-                    </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">📝 Siparişler Yönetimi</h2>
+            <p class="text-muted mb-0">
+                Toplam @orders.Count sipariş |
+                <strong class="text-success">₺@orders.Sum(o => o.TotalAmount).ToString("N2")</strong>
+            </p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Sipariş
+        </button>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3>@orders.Count(o => o.Status == "Pending")</h3>
+                    <p class="mb-0">⏳ Bekleyen</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@orders.Count(o => o.Status == "Processing")</h3>
+                    <p class="mb-0">🔄 İşleniyor</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@orders.Count(o => o.Status == "Completed")</h3>
+                    <p class="mb-0">✅ Tamamlandı</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3>@orders.Count(o => o.Status == "Cancelled")</h3>
+                    <p class="mb-0">❌ İptal</p>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Müşteri</label>
+                    <select class="form-select" @bind="filterCustomerId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Müşteriler</option>
+                        @foreach (var c in customers)
+                        {
+                            <option value="@c.Id">@c.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tedarikçi</label>
+                    <select class="form-select" @bind="filterSupplierId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Tedarikçiler</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.Id">@s.SupplierName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Durum</label>
+                    <select class="form-select" @bind="filterStatus" @bind:after="ApplyFilters">
+                        <option value="">Tümü</option>
+                        <option value="Pending">Bekleyen</option>
+                        <option value="Processing">İşleniyor</option>
+                        <option value="Completed">Tamamlandı</option>
+                        <option value="Cancelled">İptal</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">
+                        <i class="bi bi-x-circle me-1"></i> Filtreleri Temizle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredOrders?.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                    <p class="mt-3 text-muted fs-5">Sipariş bulunamadı</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Müşteri</th>
+                                <th>Tedarikçi</th>
+                                <th>Toplam</th>
+                                <th>Durum</th>
+                                <th>Tarih</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in filteredOrders)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@order.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                            <div>
+                                                <strong>@order.CustomerName</strong>
+                                                <br /><small class="text-muted">@order.CustomerEmail</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-building me-1"></i>@order.SupplierName
+                                        </span>
+                                    </td>
+                                    <td><strong class="text-success fs-5">₺@order.TotalAmount.ToString("N2")</strong></td>
+                                    <td><span class="badge @GetStatusBadge(order.Status)">@GetStatusText(order.Status)</span></td>
+                                    <td><small>@order.OrderDate.ToString("dd MMM yyyy HH:mm")</small></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewOrder(order))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(order))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(order))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="📋 Sipariş Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-xl">
+        @if (selectedOrder != null)
+        {
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3 border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <i class="bi bi-person me-1"></i> Müşteri Bilgileri
+                        </div>
+                        <div class="card-body">
+                            <h5>@selectedOrder.CustomerName</h5>
+                            <p class="mb-0"><i class="bi bi-envelope me-1"></i> @selectedOrder.CustomerEmail</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3 border-success">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-building me-1"></i> Tedarikçi Bilgileri
+                        </div>
+                        <div class="card-body">
+                            <h5>@selectedOrder.SupplierName</h5>
+                            <p class="mb-0">Tedarikçi ID: #@selectedOrder.SupplierId</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="text-muted">Toplam Tutar</h6>
+                            <h2 class="text-success">₺@selectedOrder.TotalAmount.ToString("N2")</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="text-muted">Durum</h6>
+                            <span class="badge @GetStatusBadge(selectedOrder.Status) fs-5">@GetStatusText(selectedOrder.Status)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="text-muted">Sipariş Tarihi</h6>
+                            <h5>@selectedOrder.OrderDate.ToString("dd MMMM yyyy")</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal"
+                Title="@(isEditMode ? "✏️ Sipariş Düzenle" : "➕ Yeni Sipariş")"
+                OnClose="CloseModal"
+                OnSave="SaveOrder"
+                IsSaving="@isSaving"
+                HeaderClass="@(isEditMode ? "bg-warning text-dark" : "bg-primary text-white")"
+                ModalSize="modal-lg">
+
+        @if (!isEditMode)
+        {
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold"><i class="bi bi-person me-1"></i> Müşteri <span class="text-danger">*</span></label>
+                    <select class="form-select" @bind="editCustomerId">
+                        <option value="0">-- Müşteri Seçin --</option>
+                        @foreach (var c in customers)
+                        {
+                            <option value="@c.Id">@c.FullName (@c.CustomerEmail)</option>
+                        }
+                    </select>
+                    @if (editCustomerId > 0)
+                    {
+                        var cust = customers.FirstOrDefault(c => c.Id == editCustomerId);
+                        @if (cust != null)
+                        {
+                            <div class="alert alert-primary mt-2 mb-0 py-2">
+                                <small><strong>@cust.FullName</strong> - @cust.CustomerCity</small>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold"><i class="bi bi-building me-1"></i> Tedarikçi <span class="text-danger">*</span></label>
+                    <select class="form-select" @bind="editSupplierId" @bind:after="OnSupplierChanged">
+                        <option value="0">-- Tedarikçi Seçin --</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.Id">@s.SupplierName (@s.ShopName)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            @if (editSupplierId > 0)
+            {
+                <div class="mb-3">
+                    <label class="form-label fw-bold"><i class="bi bi-box me-1"></i> Malzeme <span class="text-danger">*</span></label>
+                    <select class="form-select" @bind="editSupplierMaterialId">
+                        <option value="0">-- Malzeme Seçin --</option>
+                        @foreach (var m in filteredMaterials)
+                        {
+                            <option value="@m.Id">@m.MaterialName (₺@m.MaterialPrice.ToString("N2"))</option>
+                        }
+                    </select>
+                </div>
+            }
+        }
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Durum <span class="text-danger">*</span></label>
+            <select class="form-select" @bind="editStatus">
+                <option value="Pending">⏳ Bekliyor</option>
+                <option value="Processing">🔄 İşleniyor</option>
+                <option value="Completed">✅ Tamamlandı</option>
+                <option value="Cancelled">❌ İptal</option>
+            </select>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Sipariş Sil" Message="Bu siparişi silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
 }
 
 @code {
-    private bool isAuthenticated = false;
-    private bool isLoading = false;
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
     private List<OrderDto> orders = new();
+    private List<OrderDto> filteredOrders = new();
+    private List<CustomerDto> customers = new();
+    private List<SupplierDto> suppliers = new();
+    private List<SupplierMaterialDto> supplierMaterials = new();
+    private List<SupplierMaterialDto> filteredMaterials = new();
+    private OrderDto? selectedOrder;
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
 
-    // ✅ OnInitializedAsync - HEMEN ÇALIŞ
-    protected override async Task OnInitializedAsync()
+    // Filters
+    private int filterCustomerId;
+    private int filterSupplierId;
+    private string filterStatus = "";
+
+    // Form fields
+    private int editCustomerId;
+    private int editSupplierId;
+    private int editSupplierMaterialId;
+    private string editStatus = "Pending";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Logger.LogInformation("🔐 [Orders] IMMEDIATE auth check...");
-        isAuthenticated = await AuthService.IsAdminLoggedInAsync();
-
-        if (!isAuthenticated)
+        if (firstRender && !isChecked)
         {
-            Logger.LogWarning("❌ [Orders] Unauthorized - HEMEN redirect!");
-            Navigation.NavigateTo("/admin", replace: true);
+            isChecked = true;
+            isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+            if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; }
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+        orders = await OrderService.GetAllAsync() ?? new();
+        customers = await CustomerService.GetAllAsync() ?? new();
+        suppliers = await SupplierService.GetAllAsync() ?? new();
+        supplierMaterials = await SupplierMaterialService.GetAllAsync() ?? new();
+        ApplyFilters();
+        isLoading = false;
+    }
+
+    private void ApplyFilters()
+    {
+        filteredOrders = orders;
+        if (filterCustomerId > 0) filteredOrders = filteredOrders.Where(o => o.CustomerId == filterCustomerId).ToList();
+        if (filterSupplierId > 0) filteredOrders = filteredOrders.Where(o => o.SupplierId == filterSupplierId).ToList();
+        if (!string.IsNullOrWhiteSpace(filterStatus)) filteredOrders = filteredOrders.Where(o => o.Status == filterStatus).ToList();
+    }
+
+    private void ClearFilters() { filterCustomerId = 0; filterSupplierId = 0; filterStatus = ""; ApplyFilters(); }
+
+    private void OnSupplierChanged()
+    {
+        filteredMaterials = supplierMaterials.Where(m => m.SupplierId == editSupplierId).ToList();
+        editSupplierMaterialId = 0;
+    }
+
+    private void ViewOrder(OrderDto o) { selectedOrder = o; showViewModal = true; }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        editingId = 0;
+        editCustomerId = 0;
+        editSupplierId = 0;
+        editSupplierMaterialId = 0;
+        editStatus = "Pending";
+        filteredMaterials = new();
+        showModal = true;
+    }
+
+    private void OpenEditModal(OrderDto o)
+    {
+        isEditMode = true;
+        editingId = o.Id;
+        editCustomerId = o.CustomerId;
+        editSupplierId = o.SupplierId;
+        editSupplierMaterialId = o.SupplierMaterialId;
+        editStatus = o.Status;
+        showModal = true;
+    }
+
+    private void CloseModal() { showModal = false; }
+
+    private async Task SaveOrder()
+    {
+        if (!isEditMode && (editCustomerId == 0 || editSupplierId == 0 || editSupplierMaterialId == 0))
+        {
+            ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning);
             return;
         }
 
-        Logger.LogInformation("✅ [Orders] Authorized - loading orders");
-        await LoadOrders();
-    }
+        isSaving = true;
+        StateHasChanged();
 
-    private async Task LoadOrders()
-    {
         try
         {
-            isLoading = true;
-            orders = await OrderService.GetAllAsync() ?? new();
-            Logger.LogInformation($"✅ [Orders] {orders.Count} sipariş yüklendi");
+            bool success;
+            if (isEditMode)
+            {
+                var dto = new UpdateOrderDto { Status = editStatus };
+                success = await OrderService.UpdateAsync(editingId, dto);
+            }
+            else
+            {
+                var dto = new CreateOrderDto
+                {
+                    CustomerId = editCustomerId,
+                    SupplierId = editSupplierId,
+                    SupplierMaterialId = editSupplierMaterialId,
+                    Status = editStatus
+                };
+                success = await OrderService.CreateAsync(dto);
+            }
+
+            if (success)
+            {
+                CloseModal();
+                await LoadData();
+                ShowToast("Başarılı", isEditMode ? "Sipariş güncellendi" : "Sipariş oluşturuldu", ToastNotification.ToastType.Success);
+            }
+            else ShowToast("Hata", "İşlem başarısız", ToastNotification.ToastType.Error);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ [Orders] Siparişler yükleme hatası");
+            Logger.LogError(ex, "Sipariş kaydetme hatası");
+            ShowToast("Hata", "Bir hata oluştu", ToastNotification.ToastType.Error);
         }
-        finally
+        finally { isSaving = false; }
+    }
+
+    private void OpenDeleteDialog(OrderDto o) { deleteItemId = o.Id; deleteItemName = $"Sipariş #{o.Id} - {o.CustomerName}"; showDeleteDialog = true; }
+
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true;
+        StateHasChanged();
+        if (await OrderService.DeleteAsync(deleteItemId))
         {
-            isLoading = false;
+            showDeleteDialog = false;
+            await LoadData();
+            ShowToast("Başarılı", "Sipariş silindi", ToastNotification.ToastType.Success);
         }
+        else ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
+        isDeleting = false;
+    }
+
+    private string GetStatusBadge(string? s) => s?.ToLower() switch { "completed" => "bg-success", "processing" => "bg-info", "pending" => "bg-warning text-dark", "cancelled" => "bg-danger", _ => "bg-secondary" };
+    private string GetStatusText(string? s) => s?.ToLower() switch { "completed" => "✅ Tamamlandı", "processing" => "🔄 İşleniyor", "pending" => "⏳ Bekliyor", "cancelled" => "❌ İptal", _ => s ?? "Bilinmiyor" };
+
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type)
+    {
+        toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged();
+        await Task.Delay(3000); showToast = false; StateHasChanged();
     }
 }

@@ -1,0 +1,56 @@
+﻿@namespace WoodenFurnitureRestoration.Blazor.Components.Shared
+
+<div class="modal fade @(IsVisible ? "show d-block" : "")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered @ModalSize">
+        <div class="modal-content">
+            <div class="modal-header @HeaderClass">
+                <h5 class="modal-title">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <span class="me-2">@Icon</span>
+                    }
+                    @Title
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
+            </div>
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            @if (ShowFooter)
+            {
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Close">
+                        ❌ İptal
+                    </button>
+                    <button type="button" class="btn @SaveButtonClass" @onclick="OnSave" disabled="@IsSaving">
+                        @if (IsSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        @SaveButtonText
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; } = "Modal";
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public bool ShowFooter { get; set; } = true;
+    [Parameter] public bool IsSaving { get; set; } = false;
+    [Parameter] public string SaveButtonText { get; set; } = "💾 Kaydet";
+    [Parameter] public string SaveButtonClass { get; set; } = "btn-primary";
+    [Parameter] public string HeaderClass { get; set; } = "bg-primary text-white";
+    [Parameter] public string ModalSize { get; set; } = ""; // modal-lg, modal-xl, modal-sm
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+}

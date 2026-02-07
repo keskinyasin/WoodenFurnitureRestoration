@@ -1,0 +1,44 @@
+﻿@namespace WoodenFurnitureRestoration.Blazor.Components.Shared
+
+@if (IsVisible)
+{
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div class="toast show" role="alert">
+            <div class="toast-header @HeaderClass">
+                <strong class="me-auto">@Icon @Title</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
+            </div>
+            <div class="toast-body">
+                @Message
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public ToastType Type { get; set; } = ToastType.Info;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string Icon => Type switch
+    {
+        ToastType.Success => "✅",
+        ToastType.Error => "❌",
+        ToastType.Warning => "⚠️",
+        _ => "ℹ️"
+    };
+
+    private string HeaderClass => Type switch
+    {
+        ToastType.Success => "bg-success text-white",
+        ToastType.Error => "bg-danger text-white",
+        ToastType.Warning => "bg-warning text-dark",
+        _ => "bg-info text-white"
+    };
+
+    private async Task Close() => await OnClose.InvokeAsync();
+
+    public enum ToastType { Success, Error, Warning, Info }
+}

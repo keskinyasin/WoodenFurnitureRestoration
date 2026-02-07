@@ -1,0 +1,186 @@
+﻿@page "/admin/suppliers"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Supplier
+@inject AuthService AuthService
+@inject SupplierService SupplierService
+@inject NavigationManager Navigation
+@inject ILogger<Suppliers> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;"><div class="spinner-border text-primary" role="status"></div></div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">🏭 Tedarikçiler Yönetimi</h2>
+            <p class="text-muted mb-0">Toplam @suppliers.Count tedarikçi</p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal"><i class="bi bi-plus-circle me-2"></i> Yeni Tedarikçi</button>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" placeholder="🔍 Tedarikçi veya mağaza ara..." @bind="searchTerm" @bind:event="oninput" @onkeyup="ApplyFilters" />
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-outline-secondary" @onclick="ClearFilters"><i class="bi bi-x-circle me-1"></i> Temizle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredSuppliers?.Count == 0)
+            {
+                <div class="text-center py-5"><i class="bi bi-building text-muted" style="font-size: 4rem;"></i><p class="mt-3 text-muted fs-5">Tedarikçi bulunamadı</p></div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Tedarikçi</th>
+                                <th>Mağaza</th>
+                                <th>E-posta</th>
+                                <th>Telefon</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var supplier in filteredSuppliers)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@supplier.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-building"></i>
+                                            </div>
+                                            <strong>@supplier.SupplierName</strong>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-primary">@supplier.ShopName</span></td>
+                                    <td><i class="bi bi-envelope me-1"></i>@supplier.SupplierEmail</td>
+                                    <td><i class="bi bi-telephone me-1"></i>@supplier.SupplierPhone</td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewSupplier(supplier))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(supplier))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(supplier))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="🏭 Tedarikçi Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-lg">
+        @if (selectedSupplier != null)
+        {
+            <div class="text-center mb-4">
+                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;"><i class="bi bi-building fs-1"></i></div>
+                <h3 class="mt-3">@selectedSupplier.SupplierName</h3>
+                <span class="badge bg-primary fs-6">@selectedSupplier.ShopName</span>
+            </div>
+            <div class="row">
+                <div class="col-md-6"><p><i class="bi bi-envelope me-2"></i><strong>E-posta:</strong> @selectedSupplier.SupplierEmail</p></div>
+                <div class="col-md-6"><p><i class="bi bi-telephone me-2"></i><strong>Telefon:</strong> @selectedSupplier.SupplierPhone</p></div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal" Title="@(isEditMode ? "✏️ Tedarikçi Düzenle" : "➕ Yeni Tedarikçi")" OnClose="CloseModal" OnSave="SaveSupplier" IsSaving="@isSaving" ModalSize="modal-lg">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Tedarikçi Adı <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" @bind="editName" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Mağaza Adı <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" @bind="editShopName" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">E-posta <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" @bind="editEmail" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Telefon</label>
+                <input type="tel" class="form-control" @bind="editPhone" />
+            </div>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Tedarikçi Sil" Message="Bu tedarikçiyi silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<SupplierDto> suppliers = new();
+    private List<SupplierDto> filteredSuppliers = new();
+    private SupplierDto? selectedSupplier;
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    private string searchTerm = "";
+    private string editName = "", editShopName = "", editEmail = "", editPhone = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
+
+    private async Task LoadData() { isLoading = true; StateHasChanged(); suppliers = await SupplierService.GetAllAsync() ?? new(); ApplyFilters(); isLoading = false; }
+
+    private void ApplyFilters()
+    {
+        filteredSuppliers = suppliers;
+        if (!string.IsNullOrWhiteSpace(searchTerm)) filteredSuppliers = filteredSuppliers.Where(s => s.SupplierName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || s.ShopName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void ClearFilters() { searchTerm = ""; ApplyFilters(); }
+    private void ViewSupplier(SupplierDto s) { selectedSupplier = s; showViewModal = true; }
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
+    private void OpenEditModal(SupplierDto s) { isEditMode = true; editingId = s.Id; editName = s.SupplierName; editShopName = s.ShopName; editEmail = s.SupplierEmail; editPhone = s.SupplierPhone; showModal = true; }
+    private void CloseModal() { showModal = false; ResetForm(); }
+    private void ResetForm() { editName = ""; editShopName = ""; editEmail = ""; editPhone = ""; }
+
+    private async Task SaveSupplier()
+    {
+        if (string.IsNullOrWhiteSpace(editName) || string.IsNullOrWhiteSpace(editShopName) || string.IsNullOrWhiteSpace(editEmail)) { ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; }
+        isSaving = true; StateHasChanged();
+        var dto = new CreateSupplierDto { SupplierName = editName, ShopName = editShopName, SupplierEmail = editEmail, SupplierPhone = editPhone };
+        var success = isEditMode ? await SupplierService.UpdateAsync(editingId, new UpdateSupplierDto { SupplierName = editName, ShopName = editShopName, SupplierEmail = editEmail, SupplierPhone = editPhone }) : await SupplierService.CreateAsync(dto);
+        if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); }
+        else ShowToast("Hata", "İşlem başarısız", ToastNotification.ToastType.Error);
+        isSaving = false;
+    }
+
+    private void OpenDeleteDialog(SupplierDto s) { deleteItemId = s.Id; deleteItemName = s.SupplierName; showDeleteDialog = true; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await SupplierService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
+}

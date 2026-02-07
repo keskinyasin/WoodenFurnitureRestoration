@@ -1,0 +1,47 @@
+﻿@namespace WoodenFurnitureRestoration.Blazor.Components.Shared
+
+<div class="modal fade @(IsVisible ? "show d-block" : "")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">⚠️ @Title</h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="Cancel"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <p class="mb-0 fs-5">@Message</p>
+                @if (!string.IsNullOrEmpty(ItemName))
+                {
+                    <p class="text-muted mt-2"><strong>@ItemName</strong></p>
+                }
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" @onclick="Cancel">
+                    ❌ İptal
+                </button>
+                <button type="button" class="btn btn-danger px-4" @onclick="Confirm" disabled="@IsProcessing">
+                    @if (IsProcessing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    🗑️ Sil
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; } = "Silme Onayı";
+    [Parameter] public string Message { get; set; } = "Bu öğeyi silmek istediğinizden emin misiniz?";
+    [Parameter] public string ItemName { get; set; } = "";
+    [Parameter] public bool IsProcessing { get; set; } = false;
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task Confirm() => await OnConfirm.InvokeAsync();
+    private async Task Cancel() => await OnCancel.InvokeAsync();
+}

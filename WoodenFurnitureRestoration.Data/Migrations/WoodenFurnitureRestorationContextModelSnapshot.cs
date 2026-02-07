@@ -22,51 +22,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("InvoiceTag", b =>
-                {
-                    b.Property<int>("InvoiceId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TagId")
-                        .HasColumnType("int");
-
-                    b.HasKey("InvoiceId", "TagId");
-
-                    b.HasIndex("TagId");
-
-                    b.ToTable("InvoiceTag");
-                });
-
-            modelBuilder.Entity("OrderTag", b =>
-                {
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TagId")
-                        .HasColumnType("int");
-
-                    b.HasKey("OrderId", "TagId");
-
-                    b.HasIndex("TagId");
-
-                    b.ToTable("OrderTag");
-                });
-
-            modelBuilder.Entity("PaymentTag", b =>
-                {
-                    b.Property<int>("PaymentId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TagId")
-                        .HasColumnType("int");
-
-                    b.HasKey("PaymentId", "TagId");
-
-                    b.HasIndex("TagId");
-
-                    b.ToTable("PaymentTag");
-                });
-
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Address", b =>
                 {
                     b.Property<int>("Id")
@@ -81,7 +36,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("AddressLine2")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -137,7 +91,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AddressId")
+                    b.Property<int?>("AddressId")
                         .HasColumnType("int");
 
                     b.Property<string>("BlogAuthor")
@@ -167,7 +121,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CustomerId")
+                    b.Property<int?>("CustomerId")
                         .HasColumnType("int");
 
                     b.Property<bool>("Deleted")
@@ -176,13 +130,13 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Property<DateTime>("PublishedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("RestorationId")
+                    b.Property<int?>("RestorationId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ReviewId")
+                    b.Property<int?>("ReviewId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ShippingId")
+                    b.Property<int?>("ShippingId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedDate")
@@ -244,7 +198,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("bit");
 
-                    b.Property<int>("SupplierId")
+                    b.Property<int?>("SupplierId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedDate")
@@ -589,9 +543,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("InvoiceId")
-                        .HasColumnType("int");
-
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
@@ -612,7 +563,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<int?>("ShippingId")
-                        .IsRequired()
                         .HasColumnType("int");
 
                     b.Property<int>("SupplierId")
@@ -627,8 +577,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AddressId");
-
-                    b.HasIndex("InvoiceId");
 
                     b.HasIndex("OrderId");
 
@@ -751,7 +699,8 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     b.Property<string>("RestorationImage")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("RestorationName")
                         .IsRequired()
@@ -805,7 +754,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("RestorationServiceImage")
-                        .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
@@ -914,23 +862,16 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("bit");
 
-                    b.Property<int>("InventoryId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("InvoiceId")
-                        .HasColumnType("int");
-
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProductId")
+                    b.Property<int>("OrderId1")
                         .HasColumnType("int");
 
                     b.Property<decimal>("ShippingCost")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime?>("ShippingDate")
-                        .IsRequired()
+                    b.Property<DateTime>("ShippingDate")
                         .HasColumnType("date");
 
                     b.Property<int>("ShippingStatus")
@@ -952,13 +893,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     b.HasIndex("AddressId");
 
-                    b.HasIndex("InventoryId");
-
-                    b.HasIndex("InvoiceId");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("ProductId");
+                    b.HasIndex("OrderId1");
 
                     b.HasIndex("SupplierId");
 
@@ -1020,12 +955,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Property<int>("TagId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
-
                     b.HasKey("ShippingId", "TagId");
-
-                    b.HasIndex("ProductId");
 
                     b.HasIndex("TagId");
 
@@ -1060,7 +990,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("SupplierEmail")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -1094,7 +1023,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("supplierCategories");
+                    b.ToTable("SupplierCategories");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.SupplierMaterial", b =>
@@ -1118,7 +1047,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("MaterialBrand")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -1128,7 +1056,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("MaterialColor")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -1138,11 +1065,9 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("MaterialImage")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MaterialModel")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -1160,7 +1085,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasDefaultValue(1);
 
                     b.Property<string>("MaterialSize")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -1174,9 +1098,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int?>("ShippingId")
-                        .HasColumnType("int");
-
                     b.Property<int>("SupplierId")
                         .HasColumnType("int");
 
@@ -1188,8 +1109,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasIndex("AddressId");
 
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("ShippingId");
 
                     b.HasIndex("SupplierId");
 
@@ -1219,68 +1138,48 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("Deleted")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("InvoiceId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ProductId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedDate")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.HasIndex("ProductId");
+
                     b.ToTable("Tags", (string)null);
-                });
-
-            modelBuilder.Entity("InvoiceTag", b =>
-                {
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Invoice", null)
-                        .WithMany()
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("OrderTag", b =>
-                {
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Order", null)
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("PaymentTag", b =>
-                {
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Payment", null)
-                        .WithMany()
-                        .HasForeignKey("PaymentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Address", b =>
@@ -1304,9 +1203,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                 {
                     b.HasOne("WoodenFurnitureRestoration.Entities.Address", "Address")
                         .WithMany("BlogPosts")
-                        .HasForeignKey("AddressId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("AddressId");
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Category", "Category")
                         .WithMany("BlogPosts")
@@ -1317,26 +1214,19 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.Customer", "Customer")
                         .WithMany("BlogPosts")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Restoration", "Restoration")
                         .WithMany("BlogPosts")
-                        .HasForeignKey("RestorationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("RestorationId");
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Review", "Review")
-                        .WithMany("BlogPosts")
-                        .HasForeignKey("ReviewId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .WithMany()
+                        .HasForeignKey("ReviewId");
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Shipping", "Shipping")
-                        .WithMany("BlogPosts")
-                        .HasForeignKey("ShippingId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .WithMany()
+                        .HasForeignKey("ShippingId");
 
                     b.Navigation("Address");
 
@@ -1356,13 +1246,13 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.BlogPost", "BlogPost")
                         .WithMany("BlogPostTags")
                         .HasForeignKey("BlogPostId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Tag", "Tag")
                         .WithMany("BlogPostTags")
                         .HasForeignKey("TagId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("BlogPost");
@@ -1375,8 +1265,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.Supplier", "Supplier")
                         .WithMany("Categories")
                         .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Supplier");
                 });
@@ -1417,7 +1306,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.SupplierMaterial", "SupplierMaterial")
                         .WithMany("Inventories")
                         .HasForeignKey("SupplierMaterialId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Address");
@@ -1442,8 +1331,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Shipping", "Shipping")
                         .WithMany("Invoices")
-                        .HasForeignKey("ShippingId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("ShippingId");
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Supplier", "Supplier")
                         .WithMany("Invoices")
@@ -1575,10 +1463,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Invoice", null)
-                        .WithMany("Payments")
-                        .HasForeignKey("InvoiceId");
-
                     b.HasOne("WoodenFurnitureRestoration.Entities.Order", "Order")
                         .WithMany("Payments")
                         .HasForeignKey("OrderId")
@@ -1588,8 +1472,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.Shipping", "Shipping")
                         .WithMany("Payments")
                         .HasForeignKey("ShippingId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Supplier", "Supplier")
                         .WithMany("Payments")
@@ -1600,7 +1483,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.SupplierMaterial", "SupplierMaterial")
                         .WithMany("Payments")
                         .HasForeignKey("SupplierMaterialId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Address");
@@ -1732,7 +1615,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.Supplier", "Supplier")
                         .WithMany("Reviews")
                         .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.SupplierMaterial", "SupplierMaterial")
@@ -1760,26 +1643,9 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Inventory", "Inventory")
-                        .WithMany()
-                        .HasForeignKey("InventoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Invoice", "Invoice")
-                        .WithMany("Shippings")
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("WoodenFurnitureRestoration.Entities.Order", "Order")
-                        .WithMany("Shippings")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Product", "Product")
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("OrderId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1797,13 +1663,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     b.Navigation("Address");
 
-                    b.Navigation("Inventory");
-
-                    b.Navigation("Invoice");
-
                     b.Navigation("Order");
-
-                    b.Navigation("Product");
 
                     b.Navigation("Supplier");
 
@@ -1834,7 +1694,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.Payment", "Payment")
                         .WithMany("ShippingPayments")
                         .HasForeignKey("PaymentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Shipping", "Shipping")
@@ -1853,7 +1713,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.Product", "Product")
                         .WithMany("ShippingProducts")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("WoodenFurnitureRestoration.Entities.Shipping", "Shipping")
@@ -1869,10 +1729,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.ShippingTag", b =>
                 {
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Product", null)
-                        .WithMany("ShippingTags")
-                        .HasForeignKey("ProductId");
-
                     b.HasOne("WoodenFurnitureRestoration.Entities.Shipping", "Shipping")
                         .WithMany("ShippingTags")
                         .HasForeignKey("ShippingId")
@@ -1882,7 +1738,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.HasOne("WoodenFurnitureRestoration.Entities.Tag", "Tag")
                         .WithMany("ShippingTags")
                         .HasForeignKey("TagId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Shipping");
@@ -1922,10 +1778,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("WoodenFurnitureRestoration.Entities.Shipping", null)
-                        .WithMany("SupplierMaterials")
-                        .HasForeignKey("ShippingId");
-
                     b.HasOne("WoodenFurnitureRestoration.Entities.Supplier", "Supplier")
                         .WithMany("SupplierMaterials")
                         .HasForeignKey("SupplierId")
@@ -1956,6 +1808,29 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Navigation("SupplierMaterial");
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Tag", b =>
+                {
+                    b.HasOne("WoodenFurnitureRestoration.Entities.Category", null)
+                        .WithMany("Tags")
+                        .HasForeignKey("CategoryId");
+
+                    b.HasOne("WoodenFurnitureRestoration.Entities.Invoice", null)
+                        .WithMany("Tags")
+                        .HasForeignKey("InvoiceId");
+
+                    b.HasOne("WoodenFurnitureRestoration.Entities.Order", null)
+                        .WithMany("Tags")
+                        .HasForeignKey("OrderId");
+
+                    b.HasOne("WoodenFurnitureRestoration.Entities.Payment", null)
+                        .WithMany("Tags")
+                        .HasForeignKey("PaymentId");
+
+                    b.HasOne("WoodenFurnitureRestoration.Entities.Product", null)
+                        .WithMany("Tags")
+                        .HasForeignKey("ProductId");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Address", b =>
@@ -1991,6 +1866,8 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Navigation("SupplierCategories");
 
                     b.Navigation("SupplierMaterials");
+
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Customer", b =>
@@ -2013,9 +1890,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                 {
                     b.Navigation("InvoiceTags");
 
-                    b.Navigation("Payments");
-
-                    b.Navigation("Shippings");
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Order", b =>
@@ -2028,7 +1903,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     b.Navigation("Payments");
 
-                    b.Navigation("Shippings");
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Payment", b =>
@@ -2038,6 +1913,8 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Navigation("PaymentTags");
 
                     b.Navigation("ShippingPayments");
+
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Product", b =>
@@ -2052,7 +1929,7 @@ namespace WoodenFurnitureRestoration.Data.Migrations
 
                     b.Navigation("ShippingProducts");
 
-                    b.Navigation("ShippingTags");
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Restoration", b =>
@@ -2066,15 +1943,8 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Navigation("Reviews");
                 });
 
-            modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Review", b =>
-                {
-                    b.Navigation("BlogPosts");
-                });
-
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Shipping", b =>
                 {
-                    b.Navigation("BlogPosts");
-
                     b.Navigation("Invoices");
 
                     b.Navigation("Orders");
@@ -2088,8 +1958,6 @@ namespace WoodenFurnitureRestoration.Data.Migrations
                     b.Navigation("ShippingProducts");
 
                     b.Navigation("ShippingTags");
-
-                    b.Navigation("SupplierMaterials");
                 });
 
             modelBuilder.Entity("WoodenFurnitureRestoration.Entities.Supplier", b =>

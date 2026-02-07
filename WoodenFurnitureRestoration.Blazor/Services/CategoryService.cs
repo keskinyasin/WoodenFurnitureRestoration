@@ -1,82 +1,105 @@
 ﻿using WoodenFurnitureRestoration.Shared.DTOs.Category;
+using System.Net.Http.Json;
 
-namespace WoodenFurnitureRestoration.Blazor.Services
+namespace WoodenFurnitureRestoration.Blazor.Services;
+
+public class CategoryService(HttpClient httpClient, ILogger<CategoryService> logger)
 {
-    public class CategoryService
+    private const string ApiUrl = "https://localhost:7265/api/categories";
+
+    public async Task<List<CategoryDto>> GetAllAsync()
     {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<CategoryService> _logger;
-        private const string API_URL = "https://localhost:7001/api/categories";
-
-        public CategoryService(HttpClient httpClient, ILogger<CategoryService> logger)
+        try
         {
-            _httpClient = httpClient;
-            _logger = logger;
+            logger.LogInformation("📥 Fetching all categories from API");
+            var response = await httpClient.GetAsync(ApiUrl);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("⚠️ API returned {StatusCode}", response.StatusCode);
+                return [];
+            }
+
+            return await response.Content.ReadFromJsonAsync<List<CategoryDto>>() ?? [];
         }
-
-        public async Task<List<CategoryDto>> GetAllAsync()
+        catch (Exception ex)
         {
-            try
-            {
-                _logger.LogInformation("📥 Fetching categories from API...");
-                var response = await _httpClient.GetAsync(API_URL);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    _logger.LogInformation($"📦 Response: {json}");
-
-                    var categories = System.Text.Json.JsonSerializer.Deserialize<List<CategoryDto>>(
-                        json,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                    ) ?? new();
-
-                    _logger.LogInformation($"✅ Got {categories.Count} categories");
-                    return categories;
-                }
-                else
-                {
-                    _logger.LogWarning($"⚠️ API returned {response.StatusCode}");
-                    return new();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Error fetching categories");
-                return new();
-            }
+            logger.LogError(ex, "❌ Error fetching categories");
+            return [];
         }
+    }
 
-        public async Task<bool> CreateAsync(CreateCategoryDto dto)
+    public async Task<CategoryDto?> GetByIdAsync(int id)
+    {
+        try
         {
-            try
+            var response = await httpClient.GetAsync($"{ApiUrl}/{id}");
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<CategoryDto>();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "❌ Error fetching category {Id}", id);
+            return null;
+        }
+    }
+
+    public async Task<bool> CreateAsync(CreateCategoryDto dto)
+    {
+        try
+        {
+            logger.LogInformation("📤 Creating category: {Name}", dto.Name);
+            var response = await httpClient.PostAsJsonAsync(ApiUrl, dto);
+
+            if (!response.IsSuccessStatusCode)
             {
-                _logger.LogInformation($"📤 Creating category: {dto.Name}");
-
-                var content = new StringContent(
-                    System.Text.Json.JsonSerializer.Serialize(dto),
-                    System.Text.Encoding.UTF8,
-                    "application/json"
-                );
-
-                var response = await _httpClient.PostAsync(API_URL, content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation("✅ Category created successfully");
-                    return true;
-                }
-                else
-                {
-                    _logger.LogWarning($"⚠️ Creation failed: {response.StatusCode}");
-                    return false;
-                }
+                var error = await response.Content.ReadAsStringAsync();
+                logger.LogWarning("⚠️ Create failed: {StatusCode} - {Error}", response.StatusCode, error);
             }
-            catch (Exception ex)
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "❌ Error creating category");
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateAsync(int id, UpdateCategoryDto dto)
+    {
+        try
+        {
+            logger.LogInformation("📤 Updating category {Id}: {Name}", id, dto.Name);
+            var response = await httpClient.PutAsJsonAsync($"{ApiUrl}/{id}", dto);
+
+            if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError(ex, "❌ Error creating category");
-                return false;
+                var error = await response.Content.ReadAsStringAsync();
+                logger.LogWarning("⚠️ Update failed: {StatusCode} - {Error}", response.StatusCode, error);
             }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "❌ Error updating category {Id}", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        try
+        {
+            logger.LogInformation("🗑️ Deleting category {Id}", id);
+            var response = await httpClient.DeleteAsync($"{ApiUrl}/{id}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "❌ Error deleting category {Id}", id);
+            return false;
         }
     }
 }

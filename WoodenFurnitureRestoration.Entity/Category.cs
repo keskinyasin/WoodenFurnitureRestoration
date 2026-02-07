@@ -9,7 +9,7 @@ namespace WoodenFurnitureRestoration.Entities
     {
         public Category() { }
 
-        // ✅ IEntity Properties (Basit Auto-Properties)
+        // ✅ IEntity Properties
         public int Id { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -21,20 +21,18 @@ namespace WoodenFurnitureRestoration.Entities
         [StringLength(100, ErrorMessage = "Kategori adı en fazla 100 karakter olmalıdır.")]
         public string CategoryName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Lütfen kategori açıklaması belirtiniz.")]
         [Display(Name = "Kategori Açıklaması")]
         [StringLength(500, ErrorMessage = "Kategori açıklaması en fazla 500 karakter olmalıdır.")]
         public string CategoryDescription { get; set; } = string.Empty;
 
-        // ✅ Foreign Keys
-        [Required]
-        public int SupplierId { get; set; }
+        // ✅ Foreign Key - NULLABLE yapıldı!
+        public int? SupplierId { get; set; }
 
-        // ✅ Navigation Properties
+        // ✅ Navigation Properties - NULLABLE yapıldı!
         [JsonIgnore]
-        public virtual Supplier Supplier { get; set; } = null!;
+        public virtual Supplier? Supplier { get; set; }
 
-        // ✅ Collections (JsonIgnore - circular reference'ı önlemek için)
+        // ✅ Collections
         [JsonIgnore]
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
@@ -59,14 +57,14 @@ namespace WoodenFurnitureRestoration.Entities
         [JsonIgnore]
         public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
-        // Constructor
+        // Constructor - SupplierId opsiyonel
         public Category(
             string categoryName,
             string categoryDescription,
-            int supplierId)
+            int? supplierId = null)
         {
             CategoryName = categoryName ?? throw new ArgumentNullException(nameof(categoryName));
-            CategoryDescription = categoryDescription ?? throw new ArgumentNullException(nameof(categoryDescription));
+            CategoryDescription = categoryDescription ?? string.Empty;
             SupplierId = supplierId;
         }
     }

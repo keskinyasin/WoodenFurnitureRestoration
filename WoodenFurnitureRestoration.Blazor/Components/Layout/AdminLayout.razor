@@ -3,53 +3,110 @@
 @inject NavigationManager Navigation
 
 <div class="admin-layout">
-    <nav class="admin-navbar">
-        <div class="navbar-container">
-            <div class="navbar-brand">
-                <a href="/admin/dashboard">
-                    <i class="bi bi-hammer"></i>
-                    <span>Admin Panel</span>
+    <nav class="admin-sidebar">
+        <div class="sidebar-header">
+            <a href="/admin/dashboard">
+                <i class="bi bi-hammer"></i>
+                <span>Admin Panel</span>
+            </a>
+        </div>
+
+        <div class="sidebar-menu">
+            <div class="menu-section">
+                <span class="section-title">📊 Genel</span>
+                <a href="/admin/dashboard" class="menu-item @GetActive("/admin/dashboard")">
+                    <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </div>
 
-            <ul class="nav-links">
-                <li>
-                    <a href="/admin/dashboard" class="nav-item @(IsActive("/admin/dashboard") ? "active" : "")">
-                        <i class="bi bi-graph-up"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/admin/categories" class="nav-item @(IsActive("/admin/categories") ? "active" : "")">
-                        <i class="bi bi-list"></i>
-                        <span>Kategoriler</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/admin/products" class="nav-item @(IsActive("/admin/products") ? "active" : "")">
-                        <i class="bi bi-box"></i>
-                        <span>Ürünler</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/admin/orders" class="nav-item @(IsActive("/admin/orders") ? "active" : "")">
-                        <i class="bi bi-cart"></i>
-                        <span>Siparişler</span>
-                    </a>
-                </li>
-            </ul>
-
-            <div class="navbar-user">
-                <a href="/logout" class="btn-logout">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Çıkış</span>
+            <div class="menu-section">
+                <span class="section-title">🛒 Satış Yönetimi</span>
+                <a href="/admin/orders" class="menu-item @GetActive("/admin/orders")">
+                    <i class="bi bi-cart"></i> Siparişler
+                </a>
+                <a href="/admin/orderdetails" class="menu-item @GetActive("/admin/orderdetails")">
+                    <i class="bi bi-list-check"></i> Sipariş Detayları
+                </a>
+                <a href="/admin/payments" class="menu-item @GetActive("/admin/payments")">
+                    <i class="bi bi-credit-card"></i> Ödemeler
+                </a>
+                <a href="/admin/invoices" class="menu-item @GetActive("/admin/invoices")">
+                    <i class="bi bi-receipt"></i> Faturalar
+                </a>
+                <a href="/admin/shippings" class="menu-item @GetActive("/admin/shippings")">
+                    <i class="bi bi-truck"></i> Kargolar
                 </a>
             </div>
+
+            <div class="menu-section">
+                <span class="section-title">📦 Ürün Yönetimi</span>
+                <a href="/admin/categories" class="menu-item @GetActive("/admin/categories")">
+                    <i class="bi bi-folder"></i> Kategoriler
+                </a>
+                <a href="/admin/products" class="menu-item @GetActive("/admin/products")">
+                    <i class="bi bi-box-seam"></i> Ürünler
+                </a>
+                <a href="/admin/inventories" class="menu-item @GetActive("/admin/inventories")">
+                    <i class="bi bi-boxes"></i> Envanter
+                </a>
+                <a href="/admin/tags" class="menu-item @GetActive("/admin/tags")">
+                    <i class="bi bi-tags"></i> Etiketler
+                </a>
+            </div>
+
+            <div class="menu-section">
+                <span class="section-title">🔧 Restorasyon</span>
+                <a href="/admin/restorations" class="menu-item @GetActive("/admin/restorations")">
+                    <i class="bi bi-tools"></i> Restorasyonlar
+                </a>
+                <a href="/admin/restorationservices" class="menu-item @GetActive("/admin/restorationservices")">
+                    <i class="bi bi-wrench"></i> Hizmetler
+                </a>
+            </div>
+
+            <div class="menu-section">
+                <span class="section-title">👥 Kullanıcılar</span>
+                <a href="/admin/customers" class="menu-item @GetActive("/admin/customers")">
+                    <i class="bi bi-people"></i> Müşteriler
+                </a>
+                <a href="/admin/suppliers" class="menu-item @GetActive("/admin/suppliers")">
+                    <i class="bi bi-building"></i> Tedarikçiler
+                </a>
+                <a href="/admin/suppliermaterials" class="menu-item @GetActive("/admin/suppliermaterials")">
+                    <i class="bi bi-bricks"></i> Malzemeler
+                </a>
+                <a href="/admin/addresses" class="menu-item @GetActive("/admin/addresses")">
+                    <i class="bi bi-geo-alt"></i> Adresler
+                </a>
+            </div>
+
+            <div class="menu-section">
+                <span class="section-title">💬 İçerik</span>
+                <a href="/admin/reviews" class="menu-item @GetActive("/admin/reviews")">
+                    <i class="bi bi-star"></i> Yorumlar
+                </a>
+                <a href="/admin/blogposts" class="menu-item @GetActive("/admin/blogposts")">
+                    <i class="bi bi-journal-text"></i> Blog Yazıları
+                </a>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="/logout" class="btn-logout">
+                <i class="bi bi-box-arrow-right"></i> Çıkış Yap
+            </a>
         </div>
     </nav>
 
     <main class="admin-content">
-        @Body
+        <div class="content-header">
+            <div class="breadcrumb-nav">
+                <span>Admin Panel</span>
+            </div>
+        </div>
+        <div class="content-body">
+            @Body
+        </div>
     </main>
 </div>
 
@@ -68,220 +125,163 @@
         StateHasChanged();
     }
 
-    private bool IsActive(string path)
+    private string GetActive(string path) => currentUrl.Contains(path) ? "active" : "";
+
+    public void Dispose()
     {
-        return currentUrl.Contains(path);
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }
 
 <style>
     .admin-layout {
+        display: flex;
         min-height: 100vh;
-        background-color: #f7fafc;
+        background-color: #f5f7fa;
     }
 
-    .admin-navbar {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 0;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-
-    .navbar-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 20px;
+    /* Sidebar */
+    .admin-sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, #1e3a5f 0%, #0d1b2a 100%);
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 70px;
-        gap: 20px;
+        flex-direction: column;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
     }
 
-    .navbar-brand a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: white;
-        text-decoration: none;
-        font-size: 20px;
-        font-weight: 700;
-        transition: opacity 0.3s ease;
-        white-space: nowrap;
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
-        .navbar-brand a:hover {
-            opacity: 0.9;
+        .sidebar-header a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-    .navbar-brand i {
-        font-size: 28px;
-    }
+        .sidebar-header i {
+            font-size: 1.5rem;
+            color: #4dabf7;
+        }
 
-    .nav-links {
-        display: flex;
-        list-style: none;
-        gap: 0;
-        margin: 0;
-        padding: 0;
+    /* Menu */
+    .sidebar-menu {
         flex: 1;
-        align-items: center;
-        flex-wrap: nowrap;
+        padding: 15px 0;
+        overflow-y: auto;
     }
 
-        .nav-links li {
-            margin: 0;
-            white-space: nowrap;
-        }
+    .menu-section {
+        margin-bottom: 15px;
+    }
 
-    .nav-item {
+    .section-title {
+        display: block;
+        padding: 10px 20px 5px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #8fa3b8;
+        letter-spacing: 1px;
+    }
+
+    .menu-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        color: rgba(255, 255, 255, 0.85);
+        gap: 12px;
+        padding: 12px 20px;
+        color: #c5d3e0;
         text-decoration: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-        font-size: 14px;
-        font-weight: 500;
-        position: relative;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
     }
 
-        .nav-item:hover {
-            background-color: rgba(255, 255, 255, 0.15);
+        .menu-item:hover {
+            background-color: rgba(255,255,255,0.05);
             color: white;
         }
 
-        .nav-item.active {
-            background-color: rgba(255, 255, 255, 0.25);
-            color: white;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        .menu-item.active {
+            background-color: rgba(77, 171, 247, 0.15);
+            color: #4dabf7;
+            border-left-color: #4dabf7;
         }
 
-            .nav-item.active::after {
-                content: '';
-                position: absolute;
-                bottom: -8px;
-                left: 16px;
-                right: 16px;
-                height: 3px;
-                background: white;
-                border-radius: 2px 2px 0 0;
-            }
-
-        .nav-item i {
-            font-size: 18px;
+        .menu-item i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
         }
 
-    .navbar-user {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        white-space: nowrap;
+    /* Footer */
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     .btn-logout {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.3s ease;
+        width: 100%;
+        padding: 12px;
+        background-color: rgba(255, 107, 107, 0.2);
+        color: #ff6b6b;
+        border: none;
+        border-radius: 8px;
         text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s;
     }
 
         .btn-logout:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
+            background-color: #ff6b6b;
+            color: white;
         }
 
-        .btn-logout i {
-            font-size: 16px;
-        }
-
+    /* Content */
     .admin-content {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 30px 20px;
+        flex: 1;
+        margin-left: 260px;
+        display: flex;
+        flex-direction: column;
     }
 
-    @@media (max-width: 1024px) {
-        .nav-item span {
-            display: none;
-        }
-
-        .nav-item {
-            padding: 8px 12px;
-        }
+    .content-header {
+        background: white;
+        padding: 15px 25px;
+        border-bottom: 1px solid #e0e6ed;
     }
 
-    @@media (max-width: 768px) {
-        .navbar-container {
-            height: auto;
-            flex-wrap: wrap;
-            padding: 10px 15px;
-        }
-
-        .navbar-brand a {
-            font-size: 16px;
-        }
-
-        .navbar-brand i {
-            font-size: 22px;
-        }
-
-        .nav-links {
-            order: 3;
-            width: 100%;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .nav-item {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-            .nav-item span {
-                display: none;
-            }
-
-            .nav-item i {
-                font-size: 16px;
-            }
-
-            .nav-item.active::after {
-                left: 12px;
-                right: 12px;
-            }
-
-        .btn-logout span {
-            display: none;
-        }
+    .breadcrumb-nav {
+        color: #6c757d;
+        font-size: 0.9rem;
     }
 
-    @@media (max-width: 576px) {
-        .navbar-container {
-            flex-direction: column;
-            height: auto;
-        }
+    .content-body {
+        padding: 25px;
+        flex: 1;
+    }
 
-        .navbar-brand a span {
-            display: none;
-        }
+    /* Scrollbar */
+    .sidebar-menu::-webkit-scrollbar {
+        width: 5px;
+    }
 
-        .nav-links {
-            width: 100%;
-            gap: 5px;
-        }
+    .sidebar-menu::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar-menu::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.2);
+        border-radius: 3px;
     }
 </style>

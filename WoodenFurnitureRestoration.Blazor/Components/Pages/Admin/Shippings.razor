@@ -1,0 +1,325 @@
+﻿@page "/admin/shippings"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Shipping
+@using WoodenFurnitureRestoration.Shared.DTOs.Order
+@using WoodenFurnitureRestoration.Shared.DTOs.Address
+@using WoodenFurnitureRestoration.Shared.DTOs.Supplier
+@inject AuthService AuthService
+@inject ShippingService ShippingService
+@inject OrderService OrderService
+@inject AddressService AddressService
+@inject SupplierService SupplierService
+@inject NavigationManager Navigation
+@inject ILogger<Shippings> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">🚚 Kargolar Yönetimi</h2>
+            <p class="text-muted mb-0">Toplam @shippings.Count kargo | <strong class="text-success">₺@shippings.Sum(s => s.ShippingCost).ToString("N2")</strong></p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Kargo
+        </button>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark"><div class="card-body text-center"><h3>@shippings.Count(s => s.ShippingStatus == "Pending")</h3><p class="mb-0">📦 Hazırlanıyor</p></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white"><div class="card-body text-center"><h3>@shippings.Count(s => s.ShippingStatus == "Shipped")</h3><p class="mb-0">🚚 Yolda</p></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white"><div class="card-body text-center"><h3>@shippings.Count(s => s.ShippingStatus == "Delivered")</h3><p class="mb-0">✅ Teslim Edildi</p></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white"><div class="card-body text-center"><h3>@shippings.Count(s => s.ShippingStatus == "Cancelled")</h3><p class="mb-0">❌ İptal</p></div></div>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Sipariş</label>
+                    <select class="form-select" @bind="filterOrderId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Siparişler</option>
+                        @foreach (var o in orders)
+                        {
+                            <option value="@o.Id">#@o.Id - @o.CustomerName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tedarikçi</label>
+                    <select class="form-select" @bind="filterSupplierId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Tedarikçiler</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.Id">@s.SupplierName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Şehir</label>
+                    <input type="text" class="form-control" placeholder="Şehir ara..." @bind="filterCity" @bind:event="oninput" @onkeyup="ApplyFilters" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Durum</label>
+                    <select class="form-select" @bind="filterStatus" @bind:after="ApplyFilters">
+                        <option value="">Tümü</option>
+                        <option value="Pending">Hazırlanıyor</option>
+                        <option value="Shipped">Yolda</option>
+                        <option value="Delivered">Teslim Edildi</option>
+                        <option value="Cancelled">İptal</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredShippings?.Count == 0)
+            {
+                <div class="text-center py-5"><i class="bi bi-truck text-muted" style="font-size: 4rem;"></i><p class="mt-3 text-muted fs-5">Kargo bulunamadı</p></div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Sipariş</th>
+                                <th>Teslimat Adresi</th>
+                                <th>Tedarikçi</th>
+                                <th>Tür</th>
+                                <th>Ücret</th>
+                                <th>Durum</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var shipping in filteredShippings)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@shipping.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                                <i class="bi bi-cart"></i>
+                                            </div>
+                                            <strong>Sipariş #@shipping.OrderId</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-geo-alt text-danger me-1"></i>
+                                        <strong>@shipping.AddressCity</strong>
+                                        <br /><small class="text-muted">@GetAddressLine(shipping.AddressId)</small>
+                                    </td>
+                                    <td><span class="badge bg-success"><i class="bi bi-building me-1"></i>@shipping.SupplierName</span></td>
+                                    <td><span class="badge bg-primary">@shipping.ShippingType</span></td>
+                                    <td><strong class="text-success">₺@shipping.ShippingCost.ToString("N2")</strong></td>
+                                    <td><span class="badge @GetStatusBadge(shipping.ShippingStatus)">@GetStatusText(shipping.ShippingStatus)</span></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewShipping(shipping))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(shipping))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(shipping))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="🚚 Kargo Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-xl">
+        @if (selectedShipping != null)
+        {
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card border-info h-100">
+                        <div class="card-header bg-info text-white"><i class="bi bi-cart me-1"></i> Sipariş</div>
+                        <div class="card-body"><h5>Sipariş #@selectedShipping.OrderId</h5></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-danger h-100">
+                        <div class="card-header bg-danger text-white"><i class="bi bi-geo-alt me-1"></i> Teslimat Adresi</div>
+                        <div class="card-body">
+                            <h5>@selectedShipping.AddressCity</h5>
+                            <small>@GetAddressLine(selectedShipping.AddressId)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-success h-100">
+                        <div class="card-header bg-success text-white"><i class="bi bi-building me-1"></i> Tedarikçi</div>
+                        <div class="card-body"><h5>@selectedShipping.SupplierName</h5></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6 class="text-muted">Kargo Türü</h6><span class="badge bg-primary fs-6">@selectedShipping.ShippingType</span></div></div></div>
+                <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6 class="text-muted">Ücret</h6><h3 class="text-success">₺@selectedShipping.ShippingCost.ToString("N2")</h3></div></div></div>
+                <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6 class="text-muted">Durum</h6><span class="badge @GetStatusBadge(selectedShipping.ShippingStatus) fs-5">@GetStatusText(selectedShipping.ShippingStatus)</span></div></div></div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal" Title="@(isEditMode ? "✏️ Kargo Düzenle" : "➕ Yeni Kargo")" OnClose="CloseModal" OnSave="SaveShipping" IsSaving="@isSaving" ModalSize="modal-lg">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-cart me-1"></i> Sipariş <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editOrderId">
+                    <option value="0">-- Sipariş Seçin --</option>
+                    @foreach (var o in orders)
+                    {
+                        <option value="@o.Id">#@o.Id - @o.CustomerName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-geo-alt me-1"></i> Adres <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editAddressId">
+                    <option value="0">-- Adres Seçin --</option>
+                    @foreach (var a in addresses)
+                    {
+                        <option value="@a.Id">@a.City - @a.AddressLine1</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-building me-1"></i> Tedarikçi <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editSupplierId">
+                    <option value="0">-- Tedarikçi Seçin --</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.Id">@s.SupplierName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Kargo Türü</label>
+                <select class="form-select" @bind="editType">
+                    <option value="Standard">📦 Standart</option>
+                    <option value="Express">⚡ Hızlı</option>
+                    <option value="Overnight">🌙 Gece</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Durum</label>
+                <select class="form-select" @bind="editStatus">
+                    <option value="Pending">📦 Hazırlanıyor</option>
+                    <option value="Shipped">🚚 Yolda</option>
+                    <option value="Delivered">✅ Teslim Edildi</option>
+                    <option value="Cancelled">❌ İptal</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Kargo Ücreti <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text">₺</span>
+                <input type="number" step="0.01" class="form-control" @bind="editCost" />
+            </div>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Kargo Sil" Message="Bu kargo kaydını silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<ShippingDto> shippings = new();
+    private List<ShippingDto> filteredShippings = new();
+    private List<OrderDto> orders = new();
+    private List<AddressDto> addresses = new();
+    private List<SupplierDto> suppliers = new();
+    private ShippingDto? selectedShipping;
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    private int filterOrderId, filterSupplierId;
+    private string filterCity = "", filterStatus = "";
+    private int editOrderId, editAddressId, editSupplierId;
+    private string editType = "Standard", editStatus = "Pending";
+    private decimal editCost;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true; StateHasChanged();
+        shippings = await ShippingService.GetAllAsync() ?? new();
+        orders = await OrderService.GetAllAsync() ?? new();
+        addresses = await AddressService.GetAllAsync() ?? new();
+        suppliers = await SupplierService.GetAllAsync() ?? new();
+        ApplyFilters(); isLoading = false;
+    }
+
+    private void ApplyFilters()
+    {
+        filteredShippings = shippings;
+        if (filterOrderId > 0) filteredShippings = filteredShippings.Where(s => s.OrderId == filterOrderId).ToList();
+        if (filterSupplierId > 0) filteredShippings = filteredShippings.Where(s => s.SupplierId == filterSupplierId).ToList();
+        if (!string.IsNullOrWhiteSpace(filterCity)) filteredShippings = filteredShippings.Where(s => s.AddressCity.Contains(filterCity, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (!string.IsNullOrWhiteSpace(filterStatus)) filteredShippings = filteredShippings.Where(s => s.ShippingStatus == filterStatus).ToList();
+    }
+
+    private string GetAddressLine(int id) => addresses.FirstOrDefault(a => a.Id == id)?.AddressLine1 ?? "";
+    private void ViewShipping(ShippingDto s) { selectedShipping = s; showViewModal = true; }
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
+    private void OpenEditModal(ShippingDto s) { isEditMode = true; editingId = s.Id; editOrderId = s.OrderId; editAddressId = s.AddressId; editSupplierId = s.SupplierId; editType = s.ShippingType; editStatus = s.ShippingStatus; editCost = s.ShippingCost; showModal = true; }
+    private void CloseModal() { showModal = false; ResetForm(); }
+    private void ResetForm() { editOrderId = 0; editAddressId = 0; editSupplierId = 0; editType = "Standard"; editStatus = "Pending"; editCost = 0; }
+
+    private async Task SaveShipping()
+    {
+        if (editOrderId == 0 || editAddressId == 0 || editSupplierId == 0) { ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; }
+        isSaving = true; StateHasChanged();
+        ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success);
+        CloseModal(); await LoadData(); isSaving = false;
+    }
+
+    private void OpenDeleteDialog(ShippingDto s) { deleteItemId = s.Id; deleteItemName = $"Kargo #{s.Id}"; showDeleteDialog = true; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await ShippingService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+
+    private string GetStatusBadge(string? s) => s?.ToLower() switch { "delivered" => "bg-success", "shipped" => "bg-info", "pending" => "bg-warning text-dark", "cancelled" => "bg-danger", _ => "bg-secondary" };
+    private string GetStatusText(string? s) => s?.ToLower() switch { "delivered" => "Teslim Edildi", "shipped" => "Yolda", "pending" => "Hazırlanıyor", "cancelled" => "İptal", _ => s ?? "?" };
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
+}

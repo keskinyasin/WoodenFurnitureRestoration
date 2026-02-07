@@ -4,150 +4,372 @@
 @attribute [AuthorizeAdmin]
 @layout AdminLayout
 @using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
 @using WoodenFurnitureRestoration.Shared.DTOs.Category
+@using WoodenFurnitureRestoration.Shared.DTOs.Supplier
 @inject AuthService AuthService
 @inject CategoryService CategoryService
+@inject SupplierService SupplierService
 @inject NavigationManager Navigation
 @inject ILogger<Categories> Logger
 
 @if (!isAuthenticated)
 {
-    <!-- ✅ Boş -->
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
 }
 else
 {
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <h2>📋 Kategoriler Yönetimi</h2>
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
 
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5>Yeni Kategori Ekle</h5>
-                        <div class="form-group mb-3">
-                            <input type="text" class="form-control" @bind="newCategory.Name" placeholder="Kategori adı" />
-                        </div>
-                        <div class="form-group mb-3">
-                            <textarea class="form-control" @bind="newCategory.Description" placeholder="Açıklama" rows="3"></textarea>
-                        </div>
-                        <button class="btn btn-primary" @onclick="AddCategory">➕ Ekle</button>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">📂 Kategoriler</h2>
+            <p class="text-muted mb-0">Toplam @categories.Count kategori</p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Kategori
+        </button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Kategori ara..." @bind="searchTerm" @bind:event="oninput" @onkeyup="FilterCategories" />
                     </div>
                 </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Kategoriler (@categories.Count)</h5>
-                    </div>
-                    <div class="card-body">
-                        @if (isLoading)
-                        {
-                            <div class="spinner-border"></div>
-                            <p>⏳ Yükleniyor...</p>
-                        }
-                        else if (categories?.Count == 0)
-                        {
-                            <p class="text-muted">📭 Kategori yok</p>
-                        }
-                        else
-                        {
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Adı</th>
-                                        <th>Açıklama</th>
-                                        <th>Oluşturulma</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var category in categories)
-                                    {
-                                        <tr>
-                                            <td>@category.Id</td>
-                                            <td>@category.Name</td>
-                                            <td>@category.Description</td>
-                                            <td>@category.CreatedAt.ToString("dd/MM/yyyy")</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-warning me-2">✏️ Düzenle</button>
-                                                <button class="btn btn-sm btn-danger">🗑️ Sil</button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        }
-                    </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" @onclick="RefreshData">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Yenile
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredCategories?.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-folder text-muted" style="font-size: 4rem;"></i>
+                    <p class="mt-3 text-muted fs-5">Kategori bulunamadı</p>
+                    <button class="btn btn-primary" @onclick="OpenAddModal">
+                        <i class="bi bi-plus-circle me-2"></i> İlk Kategoriyi Ekle
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60px;">#</th>
+                                <th>Kategori Adı</th>
+                                <th>Açıklama</th>
+                                <th>Tedarikçi</th>
+                                <th>Oluşturulma</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var category in filteredCategories)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@category.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                                <i class="bi bi-folder"></i>
+                                            </div>
+                                            <strong>@category.Name</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @(string.IsNullOrEmpty(category.Description) ? "-" :
+                                                                            category.Description.Length > 50 ? category.Description.Substring(0, 50) + "..." : category.Description)
+                                        </small>
+                                    </td>
+                                    <td><span class="badge bg-info">@category.SupplierName</span></td>
+                                    <td><small>@category.CreatedAt.ToString("dd MMM yyyy")</small></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewCategory(category))" title="Detay">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(category))" title="Düzenle">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(category))" title="Sil">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="📂 Kategori Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false">
+        @if (selectedCategory != null)
+        {
+            <div class="text-center mb-4">
+                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="bi bi-folder fs-1"></i>
+                </div>
+                <h4 class="mt-3">@selectedCategory.Name</h4>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>ID:</strong> @selectedCategory.Id</p>
+                    <p><strong>Tedarikçi:</strong> <span class="badge bg-info">@selectedCategory.SupplierName</span></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Oluşturulma:</strong> @selectedCategory.CreatedAt.ToString("dd MMMM yyyy HH:mm")</p>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(selectedCategory.Description))
+            {
+                <hr />
+                <p><strong>Açıklama:</strong></p>
+                <p class="text-muted">@selectedCategory.Description</p>
+            }
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal"
+                Title="@(isEditMode ? "✏️ Kategori Düzenle" : "➕ Yeni Kategori")"
+                OnClose="CloseModal"
+                OnSave="SaveCategory"
+                IsSaving="@isSaving"
+                SaveButtonText="@(isEditMode ? "💾 Güncelle" : "➕ Ekle")"
+                HeaderClass="@(isEditMode ? "bg-warning text-dark" : "bg-primary text-white")">
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Kategori Adı <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" @bind="editName" placeholder="Kategori adı..." />
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Tedarikçi <span class="text-danger">*</span></label>
+            <select class="form-select" @bind="editSupplierId">
+                <option value="0">-- Tedarikçi Seçin --</option>
+                @foreach (var s in suppliers)
+                {
+                    <option value="@s.Id">@s.SupplierName</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Açıklama</label>
+            <textarea class="form-control" rows="4" @bind="editDescription" placeholder="Kategori açıklaması (opsiyonel)..."></textarea>
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog"
+                   Title="Kategori Sil"
+                   Message="Bu kategoriyi silmek istediğinizden emin misiniz? Bu kategoriye ait ürünler etkilenebilir."
+                   ItemName="@deleteItemName"
+                   IsProcessing="@isDeleting"
+                   OnConfirm="ConfirmDelete"
+                   OnCancel="@(() => showDeleteDialog = false)" />
 }
 
 @code {
-    private bool isAuthenticated = false;
-    private bool isLoading = false;
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
     private List<CategoryDto> categories = new();
-    private CreateCategoryDto newCategory = new();
+    private List<CategoryDto> filteredCategories = new();
+    private List<SupplierDto> suppliers = new();
+    private CategoryDto? selectedCategory;
+    private string searchTerm = "";
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
 
-    // ✅ OnInitializedAsync - HEMEN ÇALIŞ
-    protected override async Task OnInitializedAsync()
+    // Form fields
+    private string editName = "";
+    private string editDescription = "";
+    private int editSupplierId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Logger.LogInformation("🔐 [Categories] IMMEDIATE auth check...");
-        isAuthenticated = await AuthService.IsAdminLoggedInAsync();
-
-        if (!isAuthenticated)
+        if (firstRender && !isChecked)
         {
-            Logger.LogWarning("❌ [Categories] Unauthorized - HEMEN redirect!");
-            Navigation.NavigateTo("/admin", replace: true);
-            return;
-        }
-
-        Logger.LogInformation("✅ [Categories] Authorized - loading categories");
-        await LoadCategories();
-    }
-
-    private async Task LoadCategories()
-    {
-        try
-        {
-            isLoading = true;
-            categories = await CategoryService.GetAllAsync() ?? new();
-            Logger.LogInformation($"✅ [Categories] {categories.Count} kategori yüklendi");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "❌ [Categories] Kategoriler yükleme hatası");
-        }
-        finally
-        {
-            isLoading = false;
+            isChecked = true;
+            isAuthenticated = await AuthService.IsAdminLoggedInAsync();
+            if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; }
+            await LoadData();
+            StateHasChanged();
         }
     }
 
-    private async Task AddCategory()
+    private async Task LoadData()
     {
-        if (string.IsNullOrWhiteSpace(newCategory.Name))
+        isLoading = true;
+        StateHasChanged();
+        categories = await CategoryService.GetAllAsync() ?? new();
+        suppliers = await SupplierService.GetAllAsync() ?? new();
+        filteredCategories = categories.ToList();
+        isLoading = false;
+    }
+
+    private void FilterCategories()
+    {
+        filteredCategories = string.IsNullOrWhiteSpace(searchTerm)
+            ? categories.ToList()
+            : categories.Where(c =>
+                c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (c.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+    }
+
+    private async Task RefreshData()
+    {
+        searchTerm = "";
+        await LoadData();
+        ShowToast("Başarılı", "Veriler yenilendi", ToastNotification.ToastType.Success);
+    }
+
+    private void ViewCategory(CategoryDto category)
+    {
+        selectedCategory = category;
+        showViewModal = true;
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        editingId = 0;
+        editName = "";
+        editDescription = "";
+        editSupplierId = 0;
+        showModal = true;
+    }
+
+    private void OpenEditModal(CategoryDto category)
+    {
+        isEditMode = true;
+        editingId = category.Id;
+        editName = category.Name;
+        editDescription = category.Description ?? "";
+        editSupplierId = category.SupplierId;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        editName = "";
+        editDescription = "";
+        editSupplierId = 0;
+    }
+
+    private async Task SaveCategory()
+    {
+        if (string.IsNullOrWhiteSpace(editName) || editSupplierId == 0)
         {
-            Logger.LogWarning("⚠️ [Categories] Kategori adı boş");
+            ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning);
             return;
         }
 
+        isSaving = true;
+        StateHasChanged();
+
         try
         {
-            Logger.LogInformation($"📤 [Categories] Kategori ekleniyor: {newCategory.Name}");
-            bool success = await CategoryService.CreateAsync(newCategory);
+            bool success;
+            if (isEditMode)
+            {
+                var dto = new UpdateCategoryDto
+                {
+                    Name = editName,
+                    Description = editDescription
+                };
+                success = await CategoryService.UpdateAsync(editingId, dto);
+            }
+            else
+            {
+                var dto = new CreateCategoryDto
+                {
+                    Name = editName,
+                    Description = editDescription,
+                    SupplierId = editSupplierId
+                };
+                success = await CategoryService.CreateAsync(dto);
+            }
 
             if (success)
             {
-                Logger.LogInformation("✅ [Categories] Kategori eklendi");
-                newCategory = new();
-                await LoadCategories();
+                CloseModal();
+                await LoadData();
+                ShowToast("Başarılı", isEditMode ? "Kategori güncellendi" : "Kategori eklendi", ToastNotification.ToastType.Success);
+            }
+            else
+            {
+                ShowToast("Hata", "İşlem başarısız", ToastNotification.ToastType.Error);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ [Categories] Kategori ekleme hatası");
+            Logger.LogError(ex, "Kategori kaydetme hatası");
+            ShowToast("Hata", "Bir hata oluştu", ToastNotification.ToastType.Error);
         }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void OpenDeleteDialog(CategoryDto category)
+    {
+        deleteItemId = category.Id;
+        deleteItemName = category.Name;
+        showDeleteDialog = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true;
+        StateHasChanged();
+
+        if (await CategoryService.DeleteAsync(deleteItemId))
+        {
+            showDeleteDialog = false;
+            await LoadData();
+            ShowToast("Başarılı", "Kategori silindi", ToastNotification.ToastType.Success);
+        }
+        else
+        {
+            ShowToast("Hata", "Silme başarısız. Bu kategoriye ait ürünler olabilir.", ToastNotification.ToastType.Error);
+        }
+
+        isDeleting = false;
+    }
+
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type)
+    {
+        toastTitle = title;
+        toastMessage = msg;
+        toastType = type;
+        showToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        showToast = false;
+        StateHasChanged();
     }
 }

@@ -1,0 +1,242 @@
+﻿@page "/admin/restorations"
+@rendermode InteractiveServer
+@attribute [StreamRendering(false)]
+@attribute [AuthorizeAdmin]
+@layout AdminLayout
+@using WoodenFurnitureRestoration.Blazor.Services
+@using WoodenFurnitureRestoration.Blazor.Components.Shared
+@using WoodenFurnitureRestoration.Shared.DTOs.Restoration
+@using WoodenFurnitureRestoration.Shared.DTOs.Category
+@using RestorationSvc = WoodenFurnitureRestoration.Blazor.Services.RestorationService
+@inject AuthService AuthService
+@inject RestorationSvc RestorationService
+@inject CategoryService CategoryService
+@inject NavigationManager Navigation
+@inject ILogger<Restorations> Logger
+
+@if (!isAuthenticated)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 50vh;"><div class="spinner-border text-primary" role="status"></div></div>
+}
+else
+{
+    <ToastNotification IsVisible="@showToast" Title="@toastTitle" Message="@toastMessage" Type="@toastType" OnClose="() => showToast = false" />
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">🔧 Restorasyonlar</h2>
+            <p class="text-muted mb-0">Toplam @restorations.Count restorasyon</p>
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="OpenAddModal"><i class="bi bi-plus-circle me-2"></i> Yeni Restorasyon</button>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-3"><div class="card bg-info text-white"><div class="card-body text-center"><h4>@restorations.Count(r => r.RestorationStatus == "InProgress")</h4><p class="mb-0">🔄 Devam Eden</p></div></div></div>
+        <div class="col-md-3"><div class="card bg-warning text-dark"><div class="card-body text-center"><h4>@restorations.Count(r => r.RestorationStatus == "Pending")</h4><p class="mb-0">⏳ Bekleyen</p></div></div></div>
+        <div class="col-md-3"><div class="card bg-success text-white"><div class="card-body text-center"><h4>@restorations.Count(r => r.RestorationStatus == "Completed")</h4><p class="mb-0">✅ Tamamlanan</p></div></div></div>
+        <div class="col-md-3"><div class="card bg-danger text-white"><div class="card-body text-center"><h4>@restorations.Count(r => r.RestorationStatus == "Cancelled")</h4><p class="mb-0">❌ İptal</p></div></div></div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Kategori</label>
+                    <select class="form-select" @bind="filterCategoryId" @bind:after="ApplyFilters">
+                        <option value="0">Tüm Kategoriler</option>
+                        @foreach (var c in categories)
+                        {
+                            <option value="@c.Id">@c.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Durum</label>
+                    <select class="form-select" @bind="filterStatus" @bind:after="ApplyFilters">
+                        <option value="">Tümü</option>
+                        <option value="InProgress">Devam Eden</option>
+                        <option value="Pending">Bekleyen</option>
+                        <option value="Completed">Tamamlanan</option>
+                        <option value="Cancelled">İptal</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters"><i class="bi bi-x-circle me-1"></i> Temizle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            }
+            else if (filteredRestorations?.Count == 0)
+            {
+                <div class="text-center py-5"><i class="bi bi-tools text-muted" style="font-size: 4rem;"></i><p class="mt-3 text-muted fs-5">Restorasyon bulunamadı</p></div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Restorasyon</th>
+                                <th>Kategori</th>
+                                <th>Fiyat</th>
+                                <th>Durum</th>
+                                <th>Başlangıç</th>
+                                <th>Bitiş</th>
+                                <th class="text-center">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in filteredRestorations)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@r.Id</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            @if (!string.IsNullOrEmpty(r.RestorationImage))
+                                            {
+                                                <img src="@r.RestorationImage" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="bg-warning text-dark rounded d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;"><i class="bi bi-tools"></i></div>
+                                            }
+                                            <strong>@r.RestorationName</strong>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info"><i class="bi bi-folder me-1"></i>@r.CategoryName</span></td>
+                                    <td><strong class="text-success">₺@r.RestorationPrice.ToString("N2")</strong></td>
+                                    <td><span class="badge @GetStatusBadge(r.RestorationStatus)">@GetStatusText(r.RestorationStatus)</span></td>
+                                    <td><small>@r.RestorationDate.ToString("dd MMM yyyy")</small></td>
+                                    <td><small>@r.RestorationEndDate.ToString("dd MMM yyyy")</small></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="@(() => ViewRestoration(r))"><i class="bi bi-eye"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => OpenEditModal(r))"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => OpenDeleteDialog(r))"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <AdminModal IsVisible="@showViewModal" Title="🔧 Restorasyon Detayı" OnClose="@(() => showViewModal = false)" ShowFooter="false" ModalSize="modal-lg">
+        @if (selectedRestoration != null)
+        {
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    @if (!string.IsNullOrEmpty(selectedRestoration.RestorationImage))
+                    {
+                        <img src="@selectedRestoration.RestorationImage" class="img-fluid rounded" />
+                    }
+                </div>
+                <div class="col-md-8">
+                    <h4>@selectedRestoration.RestorationName</h4>
+                    <p class="text-muted">@selectedRestoration.RestorationDescription</p>
+                    <p><strong>Kategori:</strong> <span class="badge bg-info">@selectedRestoration.CategoryName</span></p>
+                    <p><strong>Fiyat:</strong> <span class="text-success fw-bold fs-4">₺@selectedRestoration.RestorationPrice.ToString("N2")</span></p>
+                    <p><strong>Durum:</strong> <span class="badge @GetStatusBadge(selectedRestoration.RestorationStatus)">@GetStatusText(selectedRestoration.RestorationStatus)</span></p>
+                </div>
+            </div>
+        }
+    </AdminModal>
+
+    <!-- Add/Edit Modal -->
+    <AdminModal IsVisible="@showModal" Title="@(isEditMode ? "✏️ Restorasyon Düzenle" : "➕ Yeni Restorasyon")" OnClose="CloseModal" OnSave="SaveRestoration" IsSaving="@isSaving" ModalSize="modal-lg">
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <label class="form-label fw-bold">Restorasyon Adı <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" @bind="editName" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Fiyat <span class="text-danger">*</span></label>
+                <div class="input-group"><span class="input-group-text">₺</span><input type="number" step="0.01" class="form-control" @bind="editPrice" /></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"><i class="bi bi-folder me-1"></i> Kategori <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="editCategoryId">
+                    <option value="0">-- Kategori Seçin --</option>
+                    @foreach (var c in categories)
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Durum</label>
+                <select class="form-select" @bind="editStatus">
+                    <option value="Pending">⏳ Bekliyor</option>
+                    <option value="InProgress">🔄 Devam Ediyor</option>
+                    <option value="Completed">✅ Tamamlandı</option>
+                    <option value="Cancelled">❌ İptal</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Açıklama</label>
+            <textarea class="form-control" rows="3" @bind="editDescription"></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Görsel URL</label>
+            <input type="text" class="form-control" @bind="editImageUrl" />
+        </div>
+    </AdminModal>
+
+    <ConfirmDialog IsVisible="@showDeleteDialog" Title="Restorasyon Sil" Message="Bu restorasyonu silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
+}
+
+@code {
+    private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
+    private List<RestorationDto> restorations = new();
+    private List<RestorationDto> filteredRestorations = new();
+    private List<CategoryDto> categories = new();
+    private RestorationDto? selectedRestoration;
+    private int editingId, deleteItemId;
+    private string deleteItemName = "", toastTitle = "", toastMessage = "";
+    private ToastNotification.ToastType toastType;
+
+    private int filterCategoryId;
+    private string filterStatus = "";
+    private string editName = "", editDescription = "", editImageUrl = "", editStatus = "Pending";
+    private decimal editPrice;
+    private int editCategoryId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
+
+    private async Task LoadData() { isLoading = true; StateHasChanged(); restorations = await RestorationService.GetAllAsync() ?? new(); categories = await CategoryService.GetAllAsync() ?? new(); ApplyFilters(); isLoading = false; }
+
+    private void ApplyFilters() { filteredRestorations = restorations; if (filterCategoryId > 0) filteredRestorations = filteredRestorations.Where(r => r.CategoryId == filterCategoryId).ToList(); if (!string.IsNullOrWhiteSpace(filterStatus)) filteredRestorations = filteredRestorations.Where(r => r.RestorationStatus == filterStatus).ToList(); }
+    private void ClearFilters() { filterCategoryId = 0; filterStatus = ""; ApplyFilters(); }
+
+    private void ViewRestoration(RestorationDto r) { selectedRestoration = r; showViewModal = true; }
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
+    private void OpenEditModal(RestorationDto r) { isEditMode = true; editingId = r.Id; editName = r.RestorationName; editDescription = r.RestorationDescription; editPrice = r.RestorationPrice; editImageUrl = r.RestorationImage; editStatus = r.RestorationStatus; editCategoryId = r.CategoryId; showModal = true; }
+    private void CloseModal() { showModal = false; ResetForm(); }
+    private void ResetForm() { editName = ""; editDescription = ""; editPrice = 0; editImageUrl = ""; editStatus = "Pending"; editCategoryId = 0; }
+
+    private async Task SaveRestoration() { if (string.IsNullOrWhiteSpace(editName) || editCategoryId == 0) { ShowToast("Uyarı", "Zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; } isSaving = true; StateHasChanged(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); CloseModal(); await LoadData(); isSaving = false; }
+
+    private void OpenDeleteDialog(RestorationDto r) { deleteItemId = r.Id; deleteItemName = r.RestorationName; showDeleteDialog = true; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await RestorationService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+
+    private string GetStatusBadge(string? s) => s?.ToLower() switch { "completed" => "bg-success", "inprogress" => "bg-info", "pending" => "bg-warning text-dark", "cancelled" => "bg-danger", _ => "bg-secondary" };
+    private string GetStatusText(string? s) => s?.ToLower() switch { "completed" => "Tamamlandı", "inprogress" => "Devam Ediyor", "pending" => "Bekliyor", "cancelled" => "İptal", _ => s ?? "?" };
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
+}
