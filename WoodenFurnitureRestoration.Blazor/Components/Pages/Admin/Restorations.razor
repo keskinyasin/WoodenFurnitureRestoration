@@ -213,6 +213,8 @@ else
 }
 
 @code {
+    private const int DefaultRestorationDurationDays = 30;
+    
     private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
     private List<RestorationDto> restorations = new();
     private List<RestorationDto> filteredRestorations = new();
@@ -228,7 +230,7 @@ else
     private decimal editPrice;
     private int editCategoryId;
     private DateTime editStartDate = DateTime.Now;
-    private DateTime editEndDate = DateTime.Now.AddDays(30);
+    private DateTime editEndDate = DateTime.Now.AddDays(DefaultRestorationDurationDays);
 
     protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
 
@@ -241,7 +243,7 @@ else
     private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
     private void OpenEditModal(RestorationDto r) { isEditMode = true; editingId = r.Id; editName = r.RestorationName; editDescription = r.RestorationDescription; editPrice = r.RestorationPrice; editImageUrl = r.RestorationImage; editStatus = r.RestorationStatus; editCategoryId = r.CategoryId; editStartDate = r.RestorationDate; editEndDate = r.RestorationEndDate; showModal = true; }
     private void CloseModal() { showModal = false; ResetForm(); }
-    private void ResetForm() { editName = ""; editDescription = ""; editPrice = 0; editImageUrl = ""; editStatus = "Pending"; editCategoryId = 0; editStartDate = DateTime.Now; editEndDate = DateTime.Now.AddDays(30); }
+    private void ResetForm() { editName = ""; editDescription = ""; editPrice = 0; editImageUrl = ""; editStatus = "Pending"; editCategoryId = 0; editStartDate = DateTime.Now; editEndDate = DateTime.Now.AddDays(DefaultRestorationDurationDays); }
 
     private async Task SaveRestoration() 
     { 
@@ -251,7 +253,7 @@ else
             return; 
         } 
         
-        if (editStartDate >= editEndDate)
+        if (editStartDate > editEndDate)
         {
             ShowToast("Uyarı", "Bitiş tarihi başlangıç tarihinden sonra olmalıdır", ToastNotification.ToastType.Warning);
             return;
