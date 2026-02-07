@@ -85,7 +85,7 @@ Restorasyon projelerini aşağıdaki kriterlere göre filtreleyebilirsiniz:
 
 ### Gereksinimler
 - .NET 8.0 SDK
-- SQL Server veya compatible database
+- SQL Server veya uyumlu veritabanı
 - Visual Studio 2022 veya VS Code
 
 ### Adımlar

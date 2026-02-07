@@ -203,6 +203,8 @@ else
 }
 
 @code {
+    private const int DefaultRestorationDurationDays = 30;
+    
     private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
     private List<RestorationDto> restorations = new();
     private List<RestorationDto> filteredRestorations = new();
@@ -254,7 +256,7 @@ else
                 RestorationStatus = editStatus,
                 CategoryId = editCategoryId,
                 RestorationDate = DateTime.Now,
-                RestorationEndDate = DateTime.Now.AddDays(30)
+                RestorationEndDate = DateTime.Now.AddDays(DefaultRestorationDurationDays)
             };
             success = await RestorationService.UpdateAsync(editingId, updateDto);
         }
@@ -268,7 +270,7 @@ else
                 RestorationImage = editImageUrl,
                 CategoryId = editCategoryId,
                 RestorationDate = DateTime.Now,
-                RestorationEndDate = DateTime.Now.AddDays(30)
+                RestorationEndDate = DateTime.Now.AddDays(DefaultRestorationDurationDays)
             };
             success = await RestorationService.CreateAsync(createDto);
         }
