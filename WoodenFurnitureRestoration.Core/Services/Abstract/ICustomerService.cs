@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface ICustomerService
+public interface ICustomerService : IService<Customer>
 {
-    // CRUD Operations
-    Task<List<Customer>> GetAllAsync();
-    Task<Customer?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Customer customer);
-    Task<bool> UpdateAsync(int id, Customer customer);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<Customer?> GetByEmailAsync(string email);
     Task<List<Customer>> GetCustomersByCityAsync(string city);
     Task<List<Customer>> GetCustomersByCountryAsync(string country);

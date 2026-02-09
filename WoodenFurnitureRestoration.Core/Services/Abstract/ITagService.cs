@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface ITagService
+public interface ITagService : IService<Tag>
 {
-    // CRUD Operations
-    Task<List<Tag>> GetAllAsync();
-    Task<Tag?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Tag tag);
-    Task<bool> UpdateAsync(int id, Tag tag);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<Tag?> GetTagByNameAsync(string name);
     Task<List<Tag>> SearchTagsByNameAsync(string name);
     Task<bool> IsTagExistsAsync(string name);

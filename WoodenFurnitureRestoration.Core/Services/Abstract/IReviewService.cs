@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface IReviewService
+public interface IReviewService : IService<Review>
 {
-    // CRUD Operations
-    Task<List<Review>> GetAllAsync();
-    Task<Review?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Review review);
-    Task<bool> UpdateAsync(int id, Review review);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<List<Review>> GetReviewsByCustomerAsync(int customerId);
     Task<List<Review>> GetReviewsByProductAsync(int productId);
     Task<List<Review>> GetReviewsBySupplierAsync(int supplierId);

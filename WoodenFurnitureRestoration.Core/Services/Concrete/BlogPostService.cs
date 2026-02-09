@@ -1,111 +1,67 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using WoodenFurnitureRestoration.Core.Services.Abstract;
 using WoodenFurnitureRestoration.Data.Repositories.Abstract;
 using WoodenFurnitureRestoration.Entities;
 
 namespace WoodenFurnitureRestoration.Core.Services.Concrete;
 
-public class BlogPostService(IUnitOfWork unitOfWork, IMapper mapper) : IBlogPostService
+public class BlogPostService(IUnitOfWork unitOfWork, IMapper mapper)
+    : Service<BlogPost>(unitOfWork), IBlogPostService
 {
-    #region CRUD Operations
+    private readonly IMapper _mapper = mapper;
 
-    public async Task<List<BlogPost>> GetAllAsync()
+    protected override IRepository<BlogPost> Repository => _unitOfWork.BlogPostRepository;
+
+    protected override void ValidateEntity(BlogPost entity)
     {
-        return await unitOfWork.BlogPostRepository.GetAllAsync();
+        if (string.IsNullOrWhiteSpace(entity.BlogTitle))
+            throw new ArgumentException("Blog başlığı zorunludur.");
+        if (string.IsNullOrWhiteSpace(entity.BlogContent))
+            throw new ArgumentException("Blog içeriği zorunludur.");
+        if (entity.CategoryId <= 0)
+            throw new ArgumentException("Kategori seçimi zorunludur.");
     }
-
-    public async Task<BlogPost?> GetByIdAsync(int id)
-    {
-        if (id <= 0)
-            throw new ArgumentException("Geçerli bir blog post ID'si gereklidir.", nameof(id));
-
-        return await unitOfWork.BlogPostRepository.FindAsync(id);
-    }
-
-    public async Task<int> CreateAsync(BlogPost blogPost)
-    {
-        ArgumentNullException.ThrowIfNull(blogPost);
-        ValidateBlogPost(blogPost);
-
-        try
-        {
-            blogPost.CreatedDate = DateTime.Now;
-            blogPost.UpdatedDate = DateTime.Now;
-            await unitOfWork.BlogPostRepository.AddAsync(blogPost);
-            return await unitOfWork.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new InvalidOperationException("Blog post kaydedilirken bir hata oluştu.", ex);
-        }
-    }
-
-    public async Task<bool> UpdateAsync(int id, BlogPost blogPost)
-    {
-        ArgumentNullException.ThrowIfNull(blogPost);
-        ValidateBlogPost(blogPost);
-
-        var existing = await unitOfWork.BlogPostRepository.FindAsync(id);
-        if (existing is null) return false;
-
-        try
-        {
-            mapper.Map(blogPost, existing);
-            existing.UpdatedDate = DateTime.Now;
-            await unitOfWork.BlogPostRepository.UpdateAsync(existing);
-            await unitOfWork.SaveChangesAsync();
-            return true;
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new InvalidOperationException("Blog post güncellenirken bir hata oluştu.", ex);
-        }
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var blogPost = await unitOfWork.BlogPostRepository.FindAsync(id);
-        if (blogPost is null) return false;
-
-        try
-        {
-            await unitOfWork.BlogPostRepository.DeleteAsync(blogPost);
-            await unitOfWork.SaveChangesAsync();
-            return true;
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new InvalidOperationException("Blog post silinirken bir hata oluştu.", ex);
-        }
-    }
-
-    #endregion
-
-    #region Custom Business Methods
 
     public async Task<List<BlogPost>> GetBlogPostsByCategoryAsync(int categoryId)
     {
-        if (categoryId <= 0)
-            throw new ArgumentException("Geçerli bir kategori ID'si gereklidir.", nameof(categoryId));
+        return await Repository.GetAllAsync(b => b.CategoryId == categoryId && !b.Deleted);
+    }
 
-        return await unitOfWork.BlogPostRepository.GetBlogPostsByCategoryAsync(categoryId);
+    public async Task<List<BlogPost>> GetBlogPostsByCustomerAsync(int customerId)
+    {
+        return await Repository.GetAllAsync(b => b.CustomerId == customerId && !b.Deleted);
+    }
+
+    public async Task<List<BlogPost>> SearchBlogPostsAsync(string searchTerm)
+    {
+        return await Repository.GetAllAsync(b =>
+            (b.BlogTitle.Contains(searchTerm) || b.BlogContent.Contains(searchTerm)) && !b.Deleted);
+    }
+
+    public async Task<List<BlogPost>> GetRecentBlogPostsAsync(int count = 10)
+    {
+        var posts = await Repository.GetAllAsync(b => !b.Deleted);
+        return posts.OrderByDescending(b => b.PublishedDate).Take(count).ToList();
+    }
+
+    public async Task<List<BlogPost>> GetBlogPostsByDateRangeAsync(DateTime startDate, DateTime endDate)
+    {
+        return await Repository.GetAllAsync(b =>
+            b.PublishedDate >= startDate && b.PublishedDate <= endDate && !b.Deleted);
     }
 
     public async Task<List<BlogPost>> GetBlogPostsByProductNameAsync(string productName)
     {
-        if (string.IsNullOrWhiteSpace(productName))
-            throw new ArgumentException("Ürün adı gereklidir.", nameof(productName));
-
-        return await unitOfWork.BlogPostRepository.GetBlogPostsByProductNameAsync(productName);
+        // Eğer BlogPost ile Product arasında doğrudan bir ilişki yoksa, başlıkta ürün adı geçen bloglar döndürülür.
+        return await Repository.GetAllAsync(b =>
+            b.BlogTitle.Contains(productName) && !b.Deleted);
     }
 
     public async Task<List<BlogPost>> GetBlogPostsByTagNameAsync(string tagName)
     {
-        if (string.IsNullOrWhiteSpace(tagName))
-            throw new ArgumentException("Etiket adı gereklidir.", nameof(tagName));
-
-        return await unitOfWork.BlogPostRepository.GetBlogPostsByTagNameAsync(tagName);
+        // BlogPost ile Tag ilişkisi BlogPostTags üzerinden
+        return await Repository.GetAllAsync(b =>
+            b.BlogPostTags.Any(x => x.Tag.Name == tagName) && !b.Deleted);
     }
 
     public async Task<List<BlogPost>> GetBlogPostsByFiltersAsync(
@@ -117,35 +73,23 @@ public class BlogPostService(IUnitOfWork unitOfWork, IMapper mapper) : IBlogPost
         int? customerId = null,
         int? categoryId = null)
     {
-        return await unitOfWork.BlogPostRepository.GetAllAsync(bp =>
-            !bp.Deleted &&
-            (!publishedDate.HasValue || bp.PublishedDate.Date == publishedDate.Value.Date) &&
-            (!startDate.HasValue || bp.PublishedDate >= startDate.Value) &&
-            (!endDate.HasValue || bp.PublishedDate <= endDate.Value) &&
-            (string.IsNullOrEmpty(title) || bp.BlogTitle.Contains(title)) &&
-            (string.IsNullOrEmpty(content) || bp.BlogContent.Contains(content)) &&
-            (!customerId.HasValue || bp.CustomerId == customerId.Value) &&
-            (!categoryId.HasValue || bp.CategoryId == categoryId.Value));
+        var query = await Repository.GetAllAsync(b => !b.Deleted);
+
+        if (publishedDate.HasValue)
+            query = query.Where(b => b.PublishedDate.Date == publishedDate.Value.Date).ToList();
+        if (startDate.HasValue)
+            query = query.Where(b => b.PublishedDate >= startDate.Value).ToList();
+        if (endDate.HasValue)
+            query = query.Where(b => b.PublishedDate <= endDate.Value).ToList();
+        if (!string.IsNullOrWhiteSpace(title))
+            query = query.Where(b => b.BlogTitle.Contains(title)).ToList();
+        if (!string.IsNullOrWhiteSpace(content))
+            query = query.Where(b => b.BlogContent.Contains(content)).ToList();
+        if (customerId.HasValue)
+            query = query.Where(b => b.CustomerId == customerId.Value).ToList();
+        if (categoryId.HasValue)
+            query = query.Where(b => b.CategoryId == categoryId.Value).ToList();
+
+        return query;
     }
-
-    #endregion
-
-    #region Validation
-
-    private static void ValidateBlogPost(BlogPost blogPost)
-    {
-        if (string.IsNullOrWhiteSpace(blogPost.BlogTitle))
-            throw new ArgumentException("Blog başlığı gereklidir.", nameof(blogPost));
-
-        if (string.IsNullOrWhiteSpace(blogPost.BlogContent))
-            throw new ArgumentException("Blog içeriği gereklidir.", nameof(blogPost));
-
-        if (blogPost.BlogTitle.Length > 255)
-            throw new ArgumentException("Blog başlığı 255 karakterden uzun olamaz.", nameof(blogPost));
-
-        if (blogPost.CategoryId <= 0)
-            throw new ArgumentException("Geçerli bir kategori seçilmelidir.", nameof(blogPost));
-    }
-
-    #endregion
 }

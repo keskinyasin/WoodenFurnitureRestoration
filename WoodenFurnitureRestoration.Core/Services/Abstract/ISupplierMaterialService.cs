@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface ISupplierMaterialService
+public interface ISupplierMaterialService : IService<SupplierMaterial>
 {
-    // CRUD Operations
-    Task<List<SupplierMaterial>> GetAllAsync();
-    Task<SupplierMaterial?> GetByIdAsync(int id);
-    Task<int> CreateAsync(SupplierMaterial supplierMaterial);
-    Task<bool> UpdateAsync(int id, SupplierMaterial supplierMaterial);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<List<SupplierMaterial>> GetMaterialsBySupplierAsync(int supplierId);
     Task<List<SupplierMaterial>> GetMaterialsByCategoryAsync(int categoryId);
     Task<List<SupplierMaterial>> GetMaterialsByAddressAsync(int addressId);

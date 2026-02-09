@@ -6,88 +6,12 @@ using WoodenFurnitureRestoration.Entities;
 
 namespace WoodenFurnitureRestoration.Core.Services.Concrete;
 
-public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategoryService
+public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper)
+    : Service<Category>(unitOfWork), ICategoryService
 {
-    #region CRUD Operations
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-    public async Task<List<Category>> GetAllAsync()
-    {
-        return await unitOfWork.CategoryRepository.GetAllAsync(c => !c.Deleted);
-    }
-
-    public async Task<Category?> GetByIdAsync(int id)
-    {
-        if (id <= 0)
-            throw new ArgumentException("Geçerli bir kategori ID'si gereklidir.", nameof(id));
-
-        return await unitOfWork.CategoryRepository.FindAsync(id);
-    }
-
-    public async Task<int> CreateAsync(Category category)
-    {
-        ArgumentNullException.ThrowIfNull(category);
-        ValidateCategory(category);
-
-        try
-        {
-            category.CreatedDate = DateTime.Now;
-            category.UpdatedDate = DateTime.Now;
-            await unitOfWork.CategoryRepository.AddAsync(category);
-            return await unitOfWork.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new InvalidOperationException("Kategori kaydedilirken bir hata oluştu.", ex);
-        }
-    }
-
-    public async Task<bool> UpdateAsync(int id, Category category)
-    {
-        ArgumentNullException.ThrowIfNull(category);
-        ValidateCategory(category);
-
-        var existing = await unitOfWork.CategoryRepository.FindAsync(id);
-        if (existing is null) return false;
-
-        try
-        {
-            // Sadece değişen alanları güncelle
-            existing.CategoryName = category.CategoryName;
-            existing.CategoryDescription = category.CategoryDescription;
-            existing.SupplierId = category.SupplierId;
-            existing.UpdatedDate = DateTime.Now;
-
-            await unitOfWork.CategoryRepository.UpdateAsync(existing);
-            await unitOfWork.SaveChangesAsync();
-            return true;
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new InvalidOperationException("Kategori güncellenirken bir hata oluştu.", ex);
-        }
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var category = await unitOfWork.CategoryRepository.FindAsync(id);
-        if (category is null) return false;
-
-        try
-        {
-            // Soft delete
-            category.Deleted = true;
-            category.UpdatedDate = DateTime.Now;
-            await unitOfWork.CategoryRepository.UpdateAsync(category);
-            await unitOfWork.SaveChangesAsync();
-            return true;
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new InvalidOperationException("Kategori silinirken bir hata oluştu.", ex);
-        }
-    }
-
-    #endregion
+    protected override IRepository<Category> Repository => _unitOfWork.CategoryRepository;
 
     #region Custom Business Methods
 
@@ -96,7 +20,7 @@ public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategory
         string? name = null,
         string? description = null)
     {
-        return await unitOfWork.CategoryRepository.GetAllAsync(c =>
+        return await Repository.GetAllAsync(c =>
             !c.Deleted &&
             (!isActive.HasValue || c.Deleted != isActive.Value) &&
             (string.IsNullOrEmpty(name) || c.CategoryName.Contains(name)) &&
@@ -108,7 +32,7 @@ public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategory
         if (supplierId <= 0)
             throw new ArgumentException("Geçerli bir tedarikçi ID'si gereklidir.", nameof(supplierId));
 
-        return await unitOfWork.CategoryRepository.GetAllAsync(c =>
+        return await Repository.GetAllAsync(c =>
             !c.Deleted && c.SupplierId == supplierId);
     }
 
@@ -117,7 +41,8 @@ public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategory
         if (string.IsNullOrWhiteSpace(city))
             throw new ArgumentException("Şehir adı gereklidir.", nameof(city));
 
-        return await unitOfWork.CategoryRepository.GetCategoryNameByCustomerAndAddressAsync(city);
+        // Eğer özel bir repository metodu varsa kullan, yoksa uygun şekilde düzenle
+        return await _unitOfWork.CategoryRepository.GetCategoryNameByCustomerAndAddressAsync(city);
     }
 
     #endregion
@@ -126,19 +51,14 @@ public class CategoryService(IUnitOfWork unitOfWork, IMapper mapper) : ICategory
 
     private static void ValidateCategory(Category category)
     {
-        // ✅ Sadece CategoryName zorunlu
         if (string.IsNullOrWhiteSpace(category.CategoryName))
             throw new ArgumentException("Kategori adı gereklidir.", nameof(category));
 
         if (category.CategoryName.Length > 100)
             throw new ArgumentException("Kategori adı 100 karakterden uzun olamaz.", nameof(category));
 
-        // ✅ CategoryDescription opsiyonel - sadece doluysa kontrol et
         if (!string.IsNullOrWhiteSpace(category.CategoryDescription) && category.CategoryDescription.Length > 500)
             throw new ArgumentException("Kategori açıklaması 500 karakterden uzun olamaz.", nameof(category));
-
-        // ✅ SupplierId opsiyonel - kaldırıldı
-        // Kategori tedarikçi olmadan da oluşturulabilir
     }
 
     #endregion

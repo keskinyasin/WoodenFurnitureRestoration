@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface IPaymentService
+public interface IPaymentService : IService<Payment>
 {
-    // CRUD Operations
-    Task<List<Payment>> GetAllAsync();
-    Task<Payment?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Payment payment);
-    Task<bool> UpdateAsync(int id, Payment payment);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<List<Payment>> GetPaymentsByOrderAsync(int orderId);
     Task<List<Payment>> GetPaymentsBySupplierAsync(int supplierId);
     Task<List<Payment>> GetPaymentsByAddressAsync(int addressId);

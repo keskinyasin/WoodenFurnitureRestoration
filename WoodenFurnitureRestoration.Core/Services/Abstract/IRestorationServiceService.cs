@@ -3,16 +3,8 @@ using RestorationServiceEntity = WoodenFurnitureRestoration.Entities.Restoration
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface IRestorationServiceService
+public interface IRestorationServiceService : IService<RestorationServiceEntity>
 {
-    // CRUD Operations
-    Task<List<RestorationServiceEntity>> GetAllAsync();
-    Task<RestorationServiceEntity?> GetByIdAsync(int id);
-    Task<int> CreateAsync(RestorationServiceEntity restorationService);
-    Task<bool> UpdateAsync(int id, RestorationServiceEntity restorationService);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<List<RestorationServiceEntity>> GetServicesByCategoryAsync(int categoryId);
     Task<List<RestorationServiceEntity>> GetServicesByRestorationAsync(int restorationId);
     Task<List<RestorationServiceEntity>> GetServicesByStatusAsync(string status);

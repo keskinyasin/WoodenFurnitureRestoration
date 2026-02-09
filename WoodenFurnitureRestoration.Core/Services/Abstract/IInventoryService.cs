@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface IInventoryService
+public interface IInventoryService : IService<Inventory>
 {
-    // CRUD Operations
-    Task<List<Inventory>> GetAllAsync();
-    Task<Inventory?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Inventory inventory);
-    Task<bool> UpdateAsync(int id, Inventory inventory);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<List<Inventory>> GetInventoriesByProductAsync(int productId);
     Task<List<Inventory>> GetInventoriesBySupplierMaterialAsync(int supplierMaterialId);
     Task<List<Inventory>> GetInventoriesByAddressAsync(int addressId);

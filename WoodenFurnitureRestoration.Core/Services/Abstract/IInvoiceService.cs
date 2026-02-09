@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface IInvoiceService
+public interface IInvoiceService : IService<Invoice>
 {
-    // CRUD Operations
-    Task<List<Invoice>> GetAllAsync();
-    Task<Invoice?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Invoice invoice);
-    Task<bool> UpdateAsync(int id, Invoice invoice);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<List<Invoice>> GetInvoicesByOrderAsync(int orderId);
     Task<List<Invoice>> GetInvoicesBySupplierAsync(int supplierId);
     Task<List<Invoice>> GetInvoicesByPaymentAsync(int paymentId);

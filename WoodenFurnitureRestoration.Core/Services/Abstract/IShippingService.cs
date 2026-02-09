@@ -2,16 +2,8 @@
 
 namespace WoodenFurnitureRestoration.Core.Services.Abstract;
 
-public interface IShippingService
+public interface IShippingService : IService<Shipping>
 {
-    // CRUD Operations
-    Task<List<Shipping>> GetAllAsync();
-    Task<Shipping?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Shipping shipping);
-    Task<bool> UpdateAsync(int id, Shipping shipping);
-    Task<bool> DeleteAsync(int id);
-
-    // Custom Business Methods
     Task<List<Shipping>> GetShippingsByOrderAsync(int orderId);
     Task<List<Shipping>> GetShippingsByAddressAsync(int addressId);
     Task<List<Shipping>> GetShippingsBySupplierAsync(int supplierId);
