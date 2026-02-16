@@ -197,12 +197,24 @@ else
             <label class="form-label fw-bold">Görsel URL</label>
             <input type="text" class="form-control" @bind="editImageUrl" />
         </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Başlangıç Tarihi <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" @bind="editStartDate" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Bitiş Tarihi <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" @bind="editEndDate" />
+            </div>
+        </div>
     </AdminModal>
 
     <ConfirmDialog IsVisible="@showDeleteDialog" Title="Restorasyon Sil" Message="Bu restorasyonu silmek istediğinizden emin misiniz?" ItemName="@deleteItemName" IsProcessing="@isDeleting" OnConfirm="ConfirmDelete" OnCancel="@(() => showDeleteDialog = false)" />
 }
 
 @code {
+    private const int DefaultRestorationDurationDays = 30;
+    
     private bool isAuthenticated, isLoading, isChecked, showViewModal, showModal, isEditMode, isSaving, showDeleteDialog, isDeleting, showToast;
     private List<RestorationDto> restorations = new();
     private List<RestorationDto> filteredRestorations = new();
@@ -217,6 +229,8 @@ else
     private string editName = "", editDescription = "", editImageUrl = "", editStatus = "Pending";
     private decimal editPrice;
     private int editCategoryId;
+    private DateTime editStartDate = DateTime.Now;
+    private DateTime editEndDate = DateTime.Now.AddDays(DefaultRestorationDurationDays);
 
     protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
 
@@ -227,11 +241,72 @@ else
 
     private void ViewRestoration(RestorationDto r) { selectedRestoration = r; showViewModal = true; }
     private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
-    private void OpenEditModal(RestorationDto r) { isEditMode = true; editingId = r.Id; editName = r.RestorationName; editDescription = r.RestorationDescription; editPrice = r.RestorationPrice; editImageUrl = r.RestorationImage; editStatus = r.RestorationStatus; editCategoryId = r.CategoryId; showModal = true; }
+    private void OpenEditModal(RestorationDto r) { isEditMode = true; editingId = r.Id; editName = r.RestorationName; editDescription = r.RestorationDescription; editPrice = r.RestorationPrice; editImageUrl = r.RestorationImage; editStatus = r.RestorationStatus; editCategoryId = r.CategoryId; editStartDate = r.RestorationDate; editEndDate = r.RestorationEndDate; showModal = true; }
     private void CloseModal() { showModal = false; ResetForm(); }
-    private void ResetForm() { editName = ""; editDescription = ""; editPrice = 0; editImageUrl = ""; editStatus = "Pending"; editCategoryId = 0; }
+    private void ResetForm() { editName = ""; editDescription = ""; editPrice = 0; editImageUrl = ""; editStatus = "Pending"; editCategoryId = 0; editStartDate = DateTime.Now; editEndDate = DateTime.Now.AddDays(DefaultRestorationDurationDays); }
 
-    private async Task SaveRestoration() { if (string.IsNullOrWhiteSpace(editName) || editCategoryId == 0) { ShowToast("Uyarı", "Zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; } isSaving = true; StateHasChanged(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); CloseModal(); await LoadData(); isSaving = false; }
+    private async Task SaveRestoration() 
+    { 
+        if (string.IsNullOrWhiteSpace(editName) || editCategoryId == 0) 
+        { 
+            ShowToast("Uyarı", "Zorunlu alanları doldurun", ToastNotification.ToastType.Warning); 
+            return; 
+        } 
+        
+        if (editStartDate > editEndDate)
+        {
+            ShowToast("Uyarı", "Bitiş tarihi başlangıç tarihinden sonra olmalıdır", ToastNotification.ToastType.Warning);
+            return;
+        }
+        
+        isSaving = true; 
+        StateHasChanged(); 
+        
+        bool success = false;
+        
+        if (isEditMode)
+        {
+            var updateDto = new UpdateRestorationDto
+            {
+                RestorationName = editName,
+                RestorationDescription = editDescription,
+                RestorationPrice = editPrice,
+                RestorationImage = editImageUrl,
+                RestorationStatus = editStatus,
+                RestorationDate = editStartDate,
+                RestorationEndDate = editEndDate,
+                CategoryId = editCategoryId
+            };
+            success = await RestorationService.UpdateAsync(editingId, updateDto);
+        }
+        else
+        {
+            var createDto = new CreateRestorationDto
+            {
+                RestorationName = editName,
+                RestorationDescription = editDescription,
+                RestorationPrice = editPrice,
+                RestorationImage = editImageUrl,
+                RestorationDate = editStartDate,
+                RestorationEndDate = editEndDate,
+                CategoryId = editCategoryId
+            };
+            success = await RestorationService.CreateAsync(createDto);
+        }
+        
+        if (success)
+        {
+            ShowToast("Başarılı", isEditMode ? "Restorasyon güncellendi" : "Restorasyon eklendi", ToastNotification.ToastType.Success); 
+            CloseModal(); 
+            await LoadData(); 
+        }
+        else
+        {
+            ShowToast("Hata", "İşlem başarısız oldu", ToastNotification.ToastType.Error);
+        }
+        
+        isSaving = false; 
+    }
 
     private void OpenDeleteDialog(RestorationDto r) { deleteItemId = r.Id; deleteItemName = r.RestorationName; showDeleteDialog = true; }
     private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await RestorationService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
