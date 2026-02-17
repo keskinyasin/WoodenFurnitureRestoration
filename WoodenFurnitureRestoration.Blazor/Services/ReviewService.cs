@@ -5,7 +5,7 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class ReviewService(HttpClient httpClient, ILogger<ReviewService> logger)
 {
-    private const string ApiUrl = "https://localhost:7001/api/reviews";
+    private const string ApiUrl = "https://localhost:7130/api/reviews";
 
     public async Task<List<ReviewDto>> GetAllAsync()
     {

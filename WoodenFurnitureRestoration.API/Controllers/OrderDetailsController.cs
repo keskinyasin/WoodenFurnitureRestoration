@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using WoodenFurnitureRestoration.Core.Services.Abstract;
 using WoodenFurnitureRestoration.Shared.DTOs.OrderDetail;
 using WoodenFurnitureRestoration.Entities;
+using WoodenFurnitureRestoration.Data.DbContextt;
 
 namespace WoodenFurnitureRestoration.API.Controllers;
 
@@ -10,20 +12,31 @@ namespace WoodenFurnitureRestoration.API.Controllers;
 [Route("api/[controller]")]
 public class OrderDetailsController(
     IOrderDetailService orderDetailService,
+    WoodenFurnitureRestorationContext context,
     IMapper mapper,
     ILogger<OrderDetailsController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<OrderDetailDto>>> GetAll()
     {
-        var details = await orderDetailService.GetAllAsync();
+        // ✅ Include ile navigation property'leri yüklüyoruz
+        var details = await context.OrderDetails
+            .Include(od => od.Product)
+            .Include(od => od.Restoration)
+            .Include(od => od.Order)
+            .Where(od => !od.Deleted)
+            .ToListAsync();
         return Ok(mapper.Map<List<OrderDetailDto>>(details));
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderDetailDto>> GetById(int id)
     {
-        var detail = await orderDetailService.GetByIdAsync(id);
+        var detail = await context.OrderDetails
+            .Include(od => od.Product)
+            .Include(od => od.Restoration)
+            .Include(od => od.Order)
+            .FirstOrDefaultAsync(od => od.Id == id && !od.Deleted);
         if (detail is null) return NotFound(new { message = "Sipariş detayı bulunamadı" });
         return Ok(mapper.Map<OrderDetailDto>(detail));
     }

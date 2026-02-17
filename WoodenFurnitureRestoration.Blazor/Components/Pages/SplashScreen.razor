@@ -1,0 +1,38 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@layout EmptyLayout
+@inject IJSRuntime JS
+
+<div class="split-container" id="splitContainer">
+
+    <div class="left-panel"></div>
+    <div class="right-panel"></div>
+
+    <!-- Navbar üst yarı (yeşil) — bağımsız -->
+    <div class="nav-top" id="furnitureBtn">
+        <span class="navbar-item">Furniture</span>
+    </div>
+
+    <!-- Navbar alt yarı (kırmızı) — bağımsız -->
+    <div class="nav-bottom" id="restorationBtn">
+        <span class="navbar-item">Restoration</span>
+    </div>
+
+    <div class="splash-content" id="splashContent">
+        <div class="splash-inner">
+            <h1 id="splashTitle"></h1>
+            <p id="splashText"></p>
+            <div class="splash-loader"></div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("initSplitScreen");
+        }
+    }
+}

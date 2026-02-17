@@ -5,7 +5,7 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class BlogPostService(HttpClient httpClient, ILogger<BlogPostService> logger)
 {
-    private const string ApiUrl = "https://localhost:7001/api/blogposts";
+    private const string ApiUrl = "https://localhost:7130/api/blogPosts";
 
     public async Task<List<BlogPostDto>> GetAllAsync()
     {

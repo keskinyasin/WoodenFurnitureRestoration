@@ -5,7 +5,7 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class TagService(HttpClient httpClient, ILogger<TagService> logger)
 {
-    private const string ApiUrl = "https://localhost:7001/api/tags";
+    private const string ApiUrl = "https://localhost:7130/api/tags";
 
     public async Task<List<TagDto>> GetAllAsync()
     {

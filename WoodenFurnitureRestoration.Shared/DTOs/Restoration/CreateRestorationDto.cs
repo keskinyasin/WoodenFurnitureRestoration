@@ -16,8 +16,10 @@ public class CreateRestorationDto
     [Range(0.01, double.MaxValue)]
     public decimal RestorationPrice { get; set; }
 
+    public string? RestorationImage { get; set; }
+
     [Required]
-    public string RestorationImage { get; set; } = string.Empty;
+    public string RestorationStatus { get; set; } = "Pending";
 
     [Required]
     public DateTime RestorationDate { get; set; }

@@ -120,24 +120,12 @@ else
                 <h3 class="mt-3">@selectedCustomer.FullName</h3>
             </div>
             <div class="row">
-                <div class="col-md-6">
-                    <p><i class="bi bi-envelope me-2"></i><strong>E-posta:</strong> @selectedCustomer.CustomerEmail</p>
-                </div>
-                <div class="col-md-6">
-                    <p><i class="bi bi-telephone me-2"></i><strong>Telefon:</strong> @selectedCustomer.CustomerPhone</p>
-                </div>
-                <div class="col-md-6">
-                    <p><i class="bi bi-geo-alt me-2"></i><strong>Şehir:</strong> @selectedCustomer.CustomerCity</p>
-                </div>
-                <div class="col-md-6">
-                    <p><i class="bi bi-globe me-2"></i><strong>Ülke:</strong> @selectedCustomer.CustomerCountry</p>
-                </div>
-                <div class="col-md-6">
-                    <p><i class="bi bi-mailbox me-2"></i><strong>Posta Kodu:</strong> @selectedCustomer.CustomerPostalCode</p>
-                </div>
-                <div class="col-md-6">
-                    <p><i class="bi bi-calendar me-2"></i><strong>Kayıt:</strong> @selectedCustomer.CreatedAt.ToString("dd MMM yyyy")</p>
-                </div>
+                <div class="col-md-6"><p><i class="bi bi-envelope me-2"></i><strong>E-posta:</strong> @selectedCustomer.CustomerEmail</p></div>
+                <div class="col-md-6"><p><i class="bi bi-telephone me-2"></i><strong>Telefon:</strong> @selectedCustomer.CustomerPhone</p></div>
+                <div class="col-md-6"><p><i class="bi bi-geo-alt me-2"></i><strong>Şehir:</strong> @selectedCustomer.CustomerCity</p></div>
+                <div class="col-md-6"><p><i class="bi bi-globe me-2"></i><strong>Ülke:</strong> @selectedCustomer.CustomerCountry</p></div>
+                <div class="col-md-6"><p><i class="bi bi-mailbox me-2"></i><strong>Posta Kodu:</strong> @selectedCustomer.CustomerPostalCode</p></div>
+                <div class="col-md-6"><p><i class="bi bi-calendar me-2"></i><strong>Kayıt:</strong> @selectedCustomer.CreatedAt.ToString("dd MMM yyyy")</p></div>
             </div>
         }
     </AdminModal>
@@ -152,35 +140,86 @@ else
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Ad <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editFirstName" placeholder="Müşteri adı..." />
+                <input type="text" class="form-control @(errors.ContainsKey("FirstName") ? "is-invalid" : "")" @bind="editFirstName" maxlength="50" placeholder="En az 2 karakter" />
+                @if (errors.ContainsKey("FirstName"))
+                {
+                    <div class="invalid-feedback">@errors["FirstName"]</div>
+                }
+                <small class="text-muted">@editFirstName.Length / 50</small>
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Soyad <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editLastName" placeholder="Müşteri soyadı..." />
+                <input type="text" class="form-control @(errors.ContainsKey("LastName") ? "is-invalid" : "")" @bind="editLastName" maxlength="50" placeholder="En az 2 karakter" />
+                @if (errors.ContainsKey("LastName"))
+                {
+                    <div class="invalid-feedback">@errors["LastName"]</div>
+                }
+                <small class="text-muted">@editLastName.Length / 50</small>
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">E-posta <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" @bind="editEmail" placeholder="ornek@mail.com" />
+                <input type="email" class="form-control @(errors.ContainsKey("Email") ? "is-invalid" : "")" @bind="editEmail" maxlength="100" placeholder="ornek@mail.com" />
+                @if (errors.ContainsKey("Email"))
+                {
+                    <div class="invalid-feedback">@errors["Email"]</div>
+                }
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Telefon</label>
-                <input type="tel" class="form-control" @bind="editPhone" placeholder="0555 123 4567" />
+                <label class="form-label fw-bold">Telefon <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control @(errors.ContainsKey("Phone") ? "is-invalid" : "")" @bind="editPhone" maxlength="20" placeholder="05XX XXX XX XX" />
+                @if (errors.ContainsKey("Phone"))
+                {
+                    <div class="invalid-feedback">@errors["Phone"]</div>
+                }
             </div>
         </div>
+        @if (!isEditMode)
+        {
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Şifre <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control @(errors.ContainsKey("Password") ? "is-invalid" : "")" @bind="editPassword" maxlength="50" placeholder="En az 6 karakter" />
+                    @if (errors.ContainsKey("Password"))
+                    {
+                        <div class="invalid-feedback">@errors["Password"]</div>
+                    }
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Şifre Tekrar <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control @(errors.ContainsKey("PasswordConfirm") ? "is-invalid" : "")" @bind="editPasswordConfirm" maxlength="50" placeholder="Şifreyi tekrar giriniz" />
+                    @if (errors.ContainsKey("PasswordConfirm"))
+                    {
+                        <div class="invalid-feedback">@errors["PasswordConfirm"]</div>
+                    }
+                </div>
+            </div>
+        }
         <div class="row">
             <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">Şehir</label>
-                <input type="text" class="form-control" @bind="editCity" placeholder="İstanbul" />
+                <label class="form-label fw-bold">Şehir <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @(errors.ContainsKey("City") ? "is-invalid" : "")" @bind="editCity" maxlength="50" placeholder="İstanbul" />
+                @if (errors.ContainsKey("City"))
+                {
+                    <div class="invalid-feedback">@errors["City"]</div>
+                }
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">Ülke</label>
-                <input type="text" class="form-control" @bind="editCountry" placeholder="Türkiye" />
+                <label class="form-label fw-bold">Ülke <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @(errors.ContainsKey("Country") ? "is-invalid" : "")" @bind="editCountry" maxlength="50" placeholder="Türkiye" />
+                @if (errors.ContainsKey("Country"))
+                {
+                    <div class="invalid-feedback">@errors["Country"]</div>
+                }
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">Posta Kodu</label>
-                <input type="text" class="form-control" @bind="editPostalCode" placeholder="34000" />
+                <label class="form-label fw-bold">Posta Kodu <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @(errors.ContainsKey("PostalCode") ? "is-invalid" : "")" @bind="editPostalCode" maxlength="10" placeholder="34000" />
+                @if (errors.ContainsKey("PostalCode"))
+                {
+                    <div class="invalid-feedback">@errors["PostalCode"]</div>
+                }
             </div>
         </div>
     </AdminModal>
@@ -203,18 +242,11 @@ else
     private string deleteItemName = "", toastTitle = "", toastMessage = "";
     private ToastNotification.ToastType toastType;
 
-    // Filters
-    private string searchTerm = "";
-    private string filterCity = "";
-
-    // Form fields
-    private string editFirstName = "";
-    private string editLastName = "";
-    private string editEmail = "";
-    private string editPhone = "";
-    private string editCity = "";
-    private string editCountry = "";
-    private string editPostalCode = "";
+    private string searchTerm = "", filterCity = "";
+    private string editFirstName = "", editLastName = "", editEmail = "", editPhone = "";
+    private string editPassword = "", editPasswordConfirm = "";
+    private string editCity = "", editCountry = "", editPostalCode = "";
+    private Dictionary<string, string> errors = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -228,14 +260,7 @@ else
         }
     }
 
-    private async Task LoadData()
-    {
-        isLoading = true;
-        StateHasChanged();
-        customers = await CustomerService.GetAllAsync() ?? new();
-        ApplyFilters();
-        isLoading = false;
-    }
+    private async Task LoadData() { isLoading = true; StateHasChanged(); customers = await CustomerService.GetAllAsync() ?? new(); ApplyFilters(); isLoading = false; }
 
     private void ApplyFilters()
     {
@@ -243,166 +268,156 @@ else
         if (!string.IsNullOrWhiteSpace(searchTerm))
             filteredCustomers = filteredCustomers.Where(c =>
                 c.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                c.CustomerEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
-            ).ToList();
+                c.CustomerEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
         if (!string.IsNullOrWhiteSpace(filterCity))
             filteredCustomers = filteredCustomers.Where(c =>
-                c.CustomerCity.Contains(filterCity, StringComparison.OrdinalIgnoreCase)
-            ).ToList();
+                c.CustomerCity.Contains(filterCity, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
-    private void ClearFilters()
-    {
-        searchTerm = "";
-        filterCity = "";
-        ApplyFilters();
-    }
-
-    private void ViewCustomer(CustomerDto c)
-    {
-        selectedCustomer = c;
-        showViewModal = true;
-    }
-
-    private void OpenAddModal()
-    {
-        isEditMode = false;
-        editingId = 0;
-        ResetForm();
-        showModal = true;
-    }
-
+    private void ClearFilters() { searchTerm = ""; filterCity = ""; ApplyFilters(); }
+    private void ViewCustomer(CustomerDto c) { selectedCustomer = c; showViewModal = true; }
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
     private void OpenEditModal(CustomerDto c)
     {
-        isEditMode = true;
-        editingId = c.Id;
-        editFirstName = c.CustomerFirstName;
-        editLastName = c.CustomerLastName;
-        editEmail = c.CustomerEmail;
-        editPhone = c.CustomerPhone;
-        editCity = c.CustomerCity;
-        editCountry = c.CustomerCountry;
-        editPostalCode = c.CustomerPostalCode;
-        showModal = true;
+        isEditMode = true; editingId = c.Id;
+        editFirstName = c.CustomerFirstName; editLastName = c.CustomerLastName;
+        editEmail = c.CustomerEmail; editPhone = c.CustomerPhone;
+        editCity = c.CustomerCity; editCountry = c.CustomerCountry; editPostalCode = c.CustomerPostalCode;
+        errors.Clear(); showModal = true;
     }
-
-    private void CloseModal()
-    {
-        showModal = false;
-        ResetForm();
-    }
-
+    private void CloseModal() { showModal = false; ResetForm(); }
     private void ResetForm()
     {
-        editFirstName = "";
-        editLastName = "";
-        editEmail = "";
-        editPhone = "";
-        editCity = "";
-        editCountry = "";
-        editPostalCode = "";
+        editFirstName = ""; editLastName = ""; editEmail = ""; editPhone = "";
+        editPassword = ""; editPasswordConfirm = "";
+        editCity = ""; editCountry = ""; editPostalCode = "";
+        errors.Clear();
+    }
+
+    private bool ValidateForm()
+    {
+        errors.Clear();
+
+        if (string.IsNullOrWhiteSpace(editFirstName))
+            errors["FirstName"] = "Ad zorunludur.";
+        else if (editFirstName.Trim().Length < 2)
+            errors["FirstName"] = "Ad en az 2 karakter olmalıdır.";
+        else if (editFirstName.Trim().Length > 50)
+            errors["FirstName"] = "Ad en fazla 50 karakter olabilir.";
+
+        if (string.IsNullOrWhiteSpace(editLastName))
+            errors["LastName"] = "Soyad zorunludur.";
+        else if (editLastName.Trim().Length < 2)
+            errors["LastName"] = "Soyad en az 2 karakter olmalıdır.";
+        else if (editLastName.Trim().Length > 50)
+            errors["LastName"] = "Soyad en fazla 50 karakter olabilir.";
+
+        if (string.IsNullOrWhiteSpace(editEmail))
+            errors["Email"] = "E-posta zorunludur.";
+        else if (!IsValidEmail(editEmail))
+            errors["Email"] = "Geçerli bir e-posta adresi giriniz. (örn: ornek@mail.com)";
+
+        if (string.IsNullOrWhiteSpace(editPhone))
+            errors["Phone"] = "Telefon numarası zorunludur.";
+        else if (editPhone.Trim().Length < 10)
+            errors["Phone"] = "Telefon numarası en az 10 karakter olmalıdır.";
+
+        if (!isEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(editPassword))
+                errors["Password"] = "Şifre zorunludur.";
+            else if (editPassword.Length < 6)
+                errors["Password"] = "Şifre en az 6 karakter olmalıdır.";
+            else if (editPassword.Length > 50)
+                errors["Password"] = "Şifre en fazla 50 karakter olabilir.";
+
+            if (editPassword != editPasswordConfirm)
+                errors["PasswordConfirm"] = "Şifreler eşleşmiyor.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editCity))
+            errors["City"] = "Şehir zorunludur.";
+        else if (editCity.Trim().Length < 2)
+            errors["City"] = "Şehir en az 2 karakter olmalıdır.";
+
+        if (string.IsNullOrWhiteSpace(editCountry))
+            errors["Country"] = "Ülke zorunludur.";
+        else if (editCountry.Trim().Length < 2)
+            errors["Country"] = "Ülke en az 2 karakter olmalıdır.";
+
+        if (string.IsNullOrWhiteSpace(editPostalCode))
+            errors["PostalCode"] = "Posta kodu zorunludur.";
+        else if (editPostalCode.Trim().Length < 3)
+            errors["PostalCode"] = "Posta kodu en az 3 karakter olmalıdır.";
+
+        return errors.Count == 0;
+    }
+
+    private static bool IsValidEmail(string email)
+    {
+        try { var addr = new System.Net.Mail.MailAddress(email); return addr.Address == email; }
+        catch { return false; }
     }
 
     private async Task SaveCustomer()
     {
-        if (string.IsNullOrWhiteSpace(editFirstName) || string.IsNullOrWhiteSpace(editEmail))
+        if (!ValidateForm())
         {
-            ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning);
+            ShowToast("Uyarı", "Lütfen formdaki hataları düzeltin.", ToastNotification.ToastType.Warning);
             return;
         }
 
-        isSaving = true;
-        StateHasChanged();
+        isSaving = true; StateHasChanged();
 
         try
         {
             bool success;
             if (isEditMode)
             {
-                var dto = new UpdateCustomerDto
+                success = await CustomerService.UpdateAsync(editingId, new UpdateCustomerDto
                 {
-                    CustomerFirstName = editFirstName,
-                    CustomerLastName = editLastName,
-                    CustomerEmail = editEmail,
-                    CustomerPhone = editPhone,
-                    CustomerCity = editCity,
-                    CustomerCountry = editCountry,
-                    CustomerPostalCode = editPostalCode
-                };
-                success = await CustomerService.UpdateAsync(editingId, dto);
+                    CustomerFirstName = editFirstName.Trim(),
+                    CustomerLastName = editLastName.Trim(),
+                    CustomerEmail = editEmail.Trim(),
+                    CustomerPhone = editPhone.Trim(),
+                    CustomerCity = editCity.Trim(),
+                    CustomerCountry = editCountry.Trim(),
+                    CustomerPostalCode = editPostalCode.Trim()
+                });
             }
             else
             {
-                var dto = new CreateCustomerDto
+                success = await CustomerService.CreateAsync(new CreateCustomerDto
                 {
-                    CustomerFirstName = editFirstName,
-                    CustomerLastName = editLastName,
-                    CustomerEmail = editEmail,
-                    CustomerPhone = editPhone,
-                    CustomerCity = editCity,
-                    CustomerCountry = editCountry,
-                    CustomerPostalCode = editPostalCode
-                };
-                success = await CustomerService.CreateAsync(dto);
+                    CustomerFirstName = editFirstName.Trim(),
+                    CustomerLastName = editLastName.Trim(),
+                    CustomerEmail = editEmail.Trim(),
+                    CustomerPassword = editPassword,
+                    CustomerPhone = editPhone.Trim(),
+                    CustomerCity = editCity.Trim(),
+                    CustomerCountry = editCountry.Trim(),
+                    CustomerPostalCode = editPostalCode.Trim()
+                });
             }
 
-            if (success)
-            {
-                CloseModal();
-                await LoadData();
-                ShowToast("Başarılı", isEditMode ? "Müşteri güncellendi" : "Müşteri eklendi", ToastNotification.ToastType.Success);
-            }
-            else
-            {
-                ShowToast("Hata", "İşlem başarısız", ToastNotification.ToastType.Error);
-            }
+            if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Müşteri güncellendi" : "Müşteri eklendi", ToastNotification.ToastType.Success); }
+            else ShowToast("Hata", "İşlem başarısız. Lütfen tekrar deneyin.", ToastNotification.ToastType.Error);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Müşteri kaydetme hatası");
-            ShowToast("Hata", "Bir hata oluştu", ToastNotification.ToastType.Error);
+            ShowToast("Hata", "Bir hata oluştu.", ToastNotification.ToastType.Error);
         }
-        finally
-        {
-            isSaving = false;
-        }
+        finally { isSaving = false; }
     }
 
-    private void OpenDeleteDialog(CustomerDto c)
-    {
-        deleteItemId = c.Id;
-        deleteItemName = c.FullName;
-        showDeleteDialog = true;
-    }
-
+    private void OpenDeleteDialog(CustomerDto c) { deleteItemId = c.Id; deleteItemName = c.FullName; showDeleteDialog = true; }
     private async Task ConfirmDelete()
     {
-        isDeleting = true;
-        StateHasChanged();
-
-        if (await CustomerService.DeleteAsync(deleteItemId))
-        {
-            showDeleteDialog = false;
-            await LoadData();
-            ShowToast("Başarılı", "Müşteri silindi", ToastNotification.ToastType.Success);
-        }
-        else
-        {
-            ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
-        }
-
+        isDeleting = true; StateHasChanged();
+        if (await CustomerService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Müşteri silindi", ToastNotification.ToastType.Success); }
+        else ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
         isDeleting = false;
     }
-
-    private async void ShowToast(string title, string msg, ToastNotification.ToastType type)
-    {
-        toastTitle = title;
-        toastMessage = msg;
-        toastType = type;
-        showToast = true;
-        StateHasChanged();
-        await Task.Delay(3000);
-        showToast = false;
-        StateHasChanged();
-    }
+    private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
 }

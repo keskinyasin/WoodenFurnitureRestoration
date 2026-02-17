@@ -5,7 +5,7 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class PaymentService(HttpClient httpClient, ILogger<PaymentService> logger)
 {
-    private const string ApiUrl = "https://localhost:7001/api/payments";
+    private const string ApiUrl = "https://localhost:7130/api/payments";
 
     public async Task<List<PaymentDto>> GetAllAsync()
     {

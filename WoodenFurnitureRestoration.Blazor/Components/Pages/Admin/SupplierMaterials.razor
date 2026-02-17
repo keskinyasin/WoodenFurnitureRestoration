@@ -1,4 +1,5 @@
 ﻿@page "/admin/supplier-materials"
+@page "/admin/suppliermaterials"
 @rendermode InteractiveServer
 @attribute [StreamRendering(false)]
 @attribute [AuthorizeAdmin]
@@ -146,47 +147,80 @@ else
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold"><i class="bi bi-building me-1"></i> Tedarikçi <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="editSupplierId">
+                <select class="form-select @(errors.ContainsKey("Supplier") ? "is-invalid" : "")" @bind="editSupplierId">
                     <option value="0">-- Tedarikçi Seçin --</option>
                     @foreach (var s in suppliers)
                     {
                         <option value="@s.Id">@s.SupplierName</option>
                     }
                 </select>
+                @if (errors.ContainsKey("Supplier"))
+                {
+                    <div class="invalid-feedback">@errors["Supplier"]</div>
+                }
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold"><i class="bi bi-folder me-1"></i> Kategori <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="editCategoryId">
+                <select class="form-select @(errors.ContainsKey("Category") ? "is-invalid" : "")" @bind="editCategoryId">
                     <option value="0">-- Kategori Seçin --</option>
                     @foreach (var c in categories)
                     {
                         <option value="@c.Id">@c.Name</option>
                     }
                 </select>
+                @if (errors.ContainsKey("Category"))
+                {
+                    <div class="invalid-feedback">@errors["Category"]</div>
+                }
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Malzeme Adı <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editName" />
+                <input type="text" class="form-control @(errors.ContainsKey("Name") ? "is-invalid" : "")" @bind="editName" maxlength="150" placeholder="En az 3 karakter" />
+                @if (errors.ContainsKey("Name"))
+                {
+                    <div class="invalid-feedback">@errors["Name"]</div>
+                }
+                <small class="text-muted">@editName.Length / 150</small>
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Malzeme Türü</label>
-                <input type="text" class="form-control" @bind="editType" />
+                <label class="form-label fw-bold">Malzeme Türü <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @(errors.ContainsKey("Type") ? "is-invalid" : "")" @bind="editType" maxlength="50" placeholder="Ahşap, Metal, vb." />
+                @if (errors.ContainsKey("Type"))
+                {
+                    <div class="invalid-feedback">@errors["Type"]</div>
+                }
             </div>
         </div>
         <div class="mb-3">
-            <label class="form-label fw-bold">Açıklama</label>
-            <textarea class="form-control" rows="2" @bind="editDescription"></textarea>
+            <label class="form-label fw-bold">Açıklama <span class="text-danger">*</span></label>
+            <textarea class="form-control @(errors.ContainsKey("Description") ? "is-invalid" : "")" rows="2" @bind="editDescription" maxlength="500" placeholder="Malzeme hakkında kısa açıklama"></textarea>
+            @if (errors.ContainsKey("Description"))
+            {
+                <div class="invalid-feedback">@errors["Description"]</div>
+            }
+            <small class="text-muted">@editDescription.Length / 500</small>
         </div>
         <div class="row">
             <div class="col-md-4 mb-3">
                 <label class="form-label fw-bold">Miktar <span class="text-danger">*</span></label>
-                <input type="number" class="form-control" @bind="editQuantity" min="0" />
+                <input type="number" class="form-control @(errors.ContainsKey("Quantity") ? "is-invalid" : "")" @bind="editQuantity" min="0" />
+                @if (errors.ContainsKey("Quantity"))
+                {
+                    <div class="invalid-feedback">@errors["Quantity"]</div>
+                }
             </div>
             <div class="col-md-4 mb-3">
                 <label class="form-label fw-bold">Birim Fiyat <span class="text-danger">*</span></label>
-                <div class="input-group"><span class="input-group-text">₺</span><input type="number" step="0.01" class="form-control" @bind="editPrice" /></div>
+                <div class="input-group">
+                    <span class="input-group-text">₺</span>
+                    <input type="number" step="0.01" class="form-control @(errors.ContainsKey("Price") ? "is-invalid" : "")" @bind="editPrice" />
+                </div>
+                @if (errors.ContainsKey("Price"))
+                {
+                    <div class="text-danger small">@errors["Price"]</div>
+                }
             </div>
             <div class="col-md-4 mb-3">
                 <label class="form-label fw-bold">Durum</label>
@@ -194,6 +228,23 @@ else
                     <option value="Active">Aktif</option>
                     <option value="Inactive">Pasif</option>
                 </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Kategori Adı <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @(errors.ContainsKey("MaterialCategory") ? "is-invalid" : "")" @bind="editMaterialCategory" maxlength="50" placeholder="Hammadde, Yardımcı Malzeme..." />
+                @if (errors.ContainsKey("MaterialCategory"))
+                {
+                    <div class="invalid-feedback">@errors["MaterialCategory"]</div>
+                }
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Toplam Tutar</label>
+                <div class="input-group">
+                    <span class="input-group-text">₺</span>
+                    <input type="text" class="form-control bg-light" value="@((editQuantity * editPrice).ToString("N2"))" readonly />
+                </div>
             </div>
         </div>
     </AdminModal>
@@ -213,9 +264,10 @@ else
     private ToastNotification.ToastType toastType;
 
     private int filterSupplierId, filterCategoryId;
-    private string editName = "", editDescription = "", editType = "", editStatus = "Active";
+    private string editName = "", editDescription = "", editType = "", editStatus = "Active", editMaterialCategory = "";
     private int editSupplierId, editCategoryId, editQuantity;
     private decimal editPrice;
+    private Dictionary<string, string> errors = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
 
@@ -226,13 +278,118 @@ else
 
     private void ViewMaterial(SupplierMaterialDto m) { selectedMaterial = m; showViewModal = true; }
     private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
-    private void OpenEditModal(SupplierMaterialDto m) { isEditMode = true; editingId = m.Id; editSupplierId = m.SupplierId; editCategoryId = m.CategoryId; editName = m.MaterialName; editDescription = m.MaterialDescription; editType = m.MaterialType; editQuantity = m.MaterialQuantity; editPrice = m.MaterialPrice; editStatus = m.MaterialStatus; showModal = true; }
+    private void OpenEditModal(SupplierMaterialDto m)
+    {
+        isEditMode = true; editingId = m.Id;
+        editSupplierId = m.SupplierId; editCategoryId = m.CategoryId;
+        editName = m.MaterialName; editDescription = m.MaterialDescription;
+        editType = m.MaterialType; editQuantity = m.MaterialQuantity;
+        editPrice = m.MaterialPrice; editStatus = m.MaterialStatus;
+        editMaterialCategory = m.MaterialCategory;
+        errors.Clear(); showModal = true;
+    }
     private void CloseModal() { showModal = false; ResetForm(); }
-    private void ResetForm() { editSupplierId = 0; editCategoryId = 0; editName = ""; editDescription = ""; editType = ""; editQuantity = 0; editPrice = 0; editStatus = "Active"; }
+    private void ResetForm()
+    {
+        editSupplierId = 0; editCategoryId = 0; editName = ""; editDescription = "";
+        editType = ""; editQuantity = 0; editPrice = 0; editStatus = "Active";
+        editMaterialCategory = ""; errors.Clear();
+    }
 
-    private async Task SaveMaterial() { if (editSupplierId == 0 || editCategoryId == 0 || string.IsNullOrWhiteSpace(editName)) { ShowToast("Uyarı", "Zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; } isSaving = true; StateHasChanged(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); CloseModal(); await LoadData(); isSaving = false; }
+    private bool ValidateForm()
+    {
+        errors.Clear();
+
+        if (editSupplierId == 0)
+            errors["Supplier"] = "Tedarikçi seçimi zorunludur.";
+
+        if (editCategoryId == 0)
+            errors["Category"] = "Kategori seçimi zorunludur.";
+
+        if (string.IsNullOrWhiteSpace(editName))
+            errors["Name"] = "Malzeme adı zorunludur.";
+        else if (editName.Trim().Length < 3)
+            errors["Name"] = "Malzeme adı en az 3 karakter olmalıdır.";
+
+        if (string.IsNullOrWhiteSpace(editType))
+            errors["Type"] = "Malzeme türü zorunludur.";
+
+        if (string.IsNullOrWhiteSpace(editDescription))
+            errors["Description"] = "Açıklama zorunludur.";
+        else if (editDescription.Trim().Length < 5)
+            errors["Description"] = "Açıklama en az 5 karakter olmalıdır.";
+
+        if (string.IsNullOrWhiteSpace(editMaterialCategory))
+            errors["MaterialCategory"] = "Kategori adı zorunludur.";
+
+        if (editQuantity < 0)
+            errors["Quantity"] = "Miktar 0 veya daha büyük olmalıdır.";
+
+        if (editPrice <= 0)
+            errors["Price"] = "Fiyat 0'dan büyük olmalıdır.";
+
+        return errors.Count == 0;
+    }
+
+    private async Task SaveMaterial()
+    {
+        if (!ValidateForm())
+        {
+            ShowToast("Uyarı", "Lütfen formdaki hataları düzeltin.", ToastNotification.ToastType.Warning);
+            return;
+        }
+
+        isSaving = true; StateHasChanged();
+
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await SupplierMaterialService.UpdateAsync(editingId, new UpdateSupplierMaterialDto
+                {
+                    MaterialName = editName.Trim(),
+                    MaterialDescription = editDescription.Trim(),
+                    MaterialType = editType.Trim(),
+                    MaterialCategory = editMaterialCategory.Trim(),
+                    MaterialQuantity = editQuantity,
+                    MaterialPrice = editPrice,
+                    MaterialStatus = editStatus
+                });
+            }
+            else
+            {
+                success = await SupplierMaterialService.CreateAsync(new CreateSupplierMaterialDto
+                {
+                    SupplierId = editSupplierId,
+                    CategoryId = editCategoryId,
+                    MaterialName = editName.Trim(),
+                    MaterialDescription = editDescription.Trim(),
+                    MaterialType = editType.Trim(),
+                    MaterialCategory = editMaterialCategory.Trim(),
+                    MaterialQuantity = editQuantity,
+                    MaterialPrice = editPrice
+                });
+            }
+
+            if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Malzeme güncellendi" : "Malzeme eklendi", ToastNotification.ToastType.Success); }
+            else ShowToast("Hata", "İşlem başarısız. Lütfen tekrar deneyin.", ToastNotification.ToastType.Error);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Malzeme kaydetme hatası");
+            ShowToast("Hata", "Bir hata oluştu.", ToastNotification.ToastType.Error);
+        }
+        finally { isSaving = false; }
+    }
 
     private void OpenDeleteDialog(SupplierMaterialDto m) { deleteItemId = m.Id; deleteItemName = m.MaterialName; showDeleteDialog = true; }
-    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await SupplierMaterialService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true; StateHasChanged();
+        if (await SupplierMaterialService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Malzeme silindi", ToastNotification.ToastType.Success); }
+        else ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
+        isDeleting = false;
+    }
     private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
 }

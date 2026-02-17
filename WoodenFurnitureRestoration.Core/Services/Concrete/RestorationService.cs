@@ -11,7 +11,6 @@ public class RestorationService(IUnitOfWork unitOfWork, IMapper mapper)
     private readonly IMapper _mapper = mapper;
     protected override IRepository<Restoration> Repository => unitOfWork.RestorationRepository;
 
-    // Restorasyon Durumları
     private static class RestorationStatuses
     {
         public const string Pending = "Beklemede";
@@ -34,7 +33,9 @@ public class RestorationService(IUnitOfWork unitOfWork, IMapper mapper)
         if (restoration.RestorationPrice <= 0)
             throw new ArgumentException("Restorasyon fiyatı 0'dan büyük olmalıdır.", nameof(restoration));
         if (string.IsNullOrWhiteSpace(restoration.RestorationImage))
-            throw new ArgumentException("Restorasyon görseli gereklidir.", nameof(restoration));
+            restoration.RestorationImage = "https://via.placeholder.com/400x300?text=Restorasyon";
+        if (string.IsNullOrWhiteSpace(restoration.RestorationStatus))
+            restoration.RestorationStatus = "Pending";
         if (restoration.RestorationDate == default)
             throw new ArgumentException("Restorasyon tarihi gereklidir.", nameof(restoration));
         if (restoration.RestorationEndDate == default)

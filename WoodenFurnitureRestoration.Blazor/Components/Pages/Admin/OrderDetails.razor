@@ -1,4 +1,4 @@
-﻿@page "/admin/order-details"
+﻿@page "/admin/orderdetails"
 @rendermode InteractiveServer
 @attribute [StreamRendering(false)]
 @attribute [AuthorizeAdmin]
@@ -127,49 +127,75 @@ else
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold"><i class="bi bi-cart me-1"></i> Sipariş <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="editOrderId">
+                <select class="form-select @(errors.ContainsKey("Order") ? "is-invalid" : "")" @bind="editOrderId">
                     <option value="0">-- Sipariş Seçin --</option>
                     @foreach (var o in orders)
                     {
                         <option value="@o.Id">#@o.Id - @o.CustomerName</option>
                     }
                 </select>
+                @if (errors.ContainsKey("Order"))
+                {
+                    <div class="invalid-feedback">@errors["Order"]</div>
+                }
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold"><i class="bi bi-box me-1"></i> Ürün <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="editProductId" @bind:after="OnProductChanged">
+                <select class="form-select @(errors.ContainsKey("Product") ? "is-invalid" : "")" @bind="editProductId" @bind:after="OnProductChanged">
                     <option value="0">-- Ürün Seçin --</option>
                     @foreach (var p in products)
                     {
                         <option value="@p.Id">@p.Name (₺@p.Price.ToString("N2"))</option>
                     }
                 </select>
+                @if (errors.ContainsKey("Product"))
+                {
+                    <div class="invalid-feedback">@errors["Product"]</div>
+                }
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold"><i class="bi bi-tools me-1"></i> Restorasyon</label>
-                <select class="form-select" @bind="editRestorationId">
-                    <option value="0">-- Restorasyon Seçin (Opsiyonel) --</option>
+                <label class="form-label fw-bold"><i class="bi bi-tools me-1"></i> Restorasyon <span class="text-danger">*</span></label>
+                <select class="form-select @(errors.ContainsKey("Restoration") ? "is-invalid" : "")" @bind="editRestorationId">
+                    <option value="0">-- Restorasyon Seçin --</option>
                     @foreach (var r in restorations)
                     {
                         <option value="@r.Id">@r.RestorationName</option>
                     }
                 </select>
+                @if (errors.ContainsKey("Restoration"))
+                {
+                    <div class="invalid-feedback">@errors["Restoration"]</div>
+                }
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Adet <span class="text-danger">*</span></label>
-                <input type="number" class="form-control" @bind="editQuantity" min="1" />
+                <input type="number" class="form-control @(errors.ContainsKey("Quantity") ? "is-invalid" : "")" @bind="editQuantity" min="1" />
+                @if (errors.ContainsKey("Quantity"))
+                {
+                    <div class="invalid-feedback">@errors["Quantity"]</div>
+                }
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Birim Fiyat <span class="text-danger">*</span></label>
-                <div class="input-group"><span class="input-group-text">₺</span><input type="number" step="0.01" class="form-control" @bind="editUnitPrice" /></div>
+                <div class="input-group">
+                    <span class="input-group-text">₺</span>
+                    <input type="number" step="0.01" class="form-control @(errors.ContainsKey("Price") ? "is-invalid" : "")" @bind="editUnitPrice" />
+                </div>
+                @if (errors.ContainsKey("Price"))
+                {
+                    <div class="text-danger small">@errors["Price"]</div>
+                }
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Toplam</label>
-                <div class="input-group"><span class="input-group-text">₺</span><input type="text" class="form-control bg-light" value="@((editQuantity * editUnitPrice).ToString("N2"))" readonly /></div>
+                <div class="input-group">
+                    <span class="input-group-text">₺</span>
+                    <input type="text" class="form-control bg-light" value="@((editQuantity * editUnitPrice).ToString("N2"))" readonly />
+                </div>
             </div>
         </div>
     </AdminModal>
@@ -191,6 +217,7 @@ else
     private int filterOrderId, filterProductId;
     private int editOrderId, editProductId, editRestorationId, editQuantity = 1;
     private decimal editUnitPrice;
+    private Dictionary<string, string> errors = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
 
@@ -201,13 +228,83 @@ else
     private void OnProductChanged() { var p = products.FirstOrDefault(x => x.Id == editProductId); if (p != null) editUnitPrice = p.Price; }
 
     private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
-    private void OpenEditModal(OrderDetailDto d) { isEditMode = true; editingId = d.Id; editOrderId = d.OrderId; editProductId = d.ProductId; editRestorationId = d.RestorationId; editQuantity = d.Quantity; editUnitPrice = d.UnitPrice; showModal = true; }
+    private void OpenEditModal(OrderDetailDto d) { isEditMode = true; editingId = d.Id; editOrderId = d.OrderId; editProductId = d.ProductId; editRestorationId = d.RestorationId; editQuantity = d.Quantity; editUnitPrice = d.UnitPrice; errors.Clear(); showModal = true; }
     private void CloseModal() { showModal = false; ResetForm(); }
-    private void ResetForm() { editOrderId = 0; editProductId = 0; editRestorationId = 0; editQuantity = 1; editUnitPrice = 0; }
+    private void ResetForm() { editOrderId = 0; editProductId = 0; editRestorationId = 0; editQuantity = 1; editUnitPrice = 0; errors.Clear(); }
 
-    private async Task SaveOrderDetail() { if (editOrderId == 0 || editProductId == 0 || editQuantity <= 0) { ShowToast("Uyarı", "Zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; } isSaving = true; StateHasChanged(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); CloseModal(); await LoadData(); isSaving = false; }
+    private bool ValidateForm()
+    {
+        errors.Clear();
+
+        if (editOrderId == 0)
+            errors["Order"] = "Sipariş seçimi zorunludur.";
+
+        if (editProductId == 0)
+            errors["Product"] = "Ürün seçimi zorunludur.";
+
+        if (editRestorationId == 0)
+            errors["Restoration"] = "Restorasyon seçimi zorunludur.";
+
+        if (editQuantity <= 0)
+            errors["Quantity"] = "Adet en az 1 olmalıdır.";
+
+        if (editUnitPrice <= 0)
+            errors["Price"] = "Birim fiyat 0'dan büyük olmalıdır.";
+
+        return errors.Count == 0;
+    }
+
+    private async Task SaveOrderDetail()
+    {
+        if (!ValidateForm())
+        {
+            ShowToast("Uyarı", "Lütfen formdaki hataları düzeltin.", ToastNotification.ToastType.Warning);
+            return;
+        }
+
+        isSaving = true; StateHasChanged();
+
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await OrderDetailService.UpdateAsync(editingId, new UpdateOrderDetailDto
+                {
+                    Quantity = editQuantity,
+                    UnitPrice = editUnitPrice
+                });
+            }
+            else
+            {
+                success = await OrderDetailService.CreateAsync(new CreateOrderDetailDto
+                {
+                    OrderId = editOrderId,
+                    ProductId = editProductId,
+                    RestorationId = editRestorationId,
+                    Quantity = editQuantity,
+                    UnitPrice = editUnitPrice
+                });
+            }
+
+            if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Kalem güncellendi" : "Kalem eklendi", ToastNotification.ToastType.Success); }
+            else ShowToast("Hata", "İşlem başarısız. Lütfen tekrar deneyin.", ToastNotification.ToastType.Error);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Sipariş kalemi kaydetme hatası");
+            ShowToast("Hata", "Bir hata oluştu.", ToastNotification.ToastType.Error);
+        }
+        finally { isSaving = false; }
+    }
 
     private void OpenDeleteDialog(OrderDetailDto d) { deleteItemId = d.Id; deleteItemName = $"{d.ProductName} (Sipariş #{d.OrderId})"; showDeleteDialog = true; }
-    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await OrderDetailService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true; StateHasChanged();
+        if (await OrderDetailService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); }
+        else ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
+        isDeleting = false;
+    }
     private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
 }

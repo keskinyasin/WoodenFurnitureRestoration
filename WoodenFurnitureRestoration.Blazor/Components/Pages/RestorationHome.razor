@@ -1,0 +1,78 @@
+﻿@page "/restoration"
+@layout RestorationLayout
+@rendermode InteractiveServer
+
+<div class="hero">
+    <h1>🔧 Ahşap Restorasyon Hizmetleri</h1>
+    <p>Eski mobilyalarınıza yeni hayat veriyoruz</p>
+</div>
+
+<div class="features">
+    <div class="feature-card">
+        <i class="bi bi-tools"></i>
+        <h3>Onarım</h3>
+        <p>Kırık, çatlak ve hasarlı mobilya onarımı</p>
+    </div>
+    <div class="feature-card">
+        <i class="bi bi-paint-bucket"></i>
+        <h3>Boyama & Cilalama</h3>
+        <p>Profesyonel boya ve cila uygulamaları</p>
+    </div>
+    <div class="feature-card">
+        <i class="bi bi-arrow-repeat"></i>
+        <h3>Yenileme</h3>
+        <p>Antika mobilya restorasyonu ve modernizasyon</p>
+    </div>
+</div>
+
+<style>
+    .hero {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: linear-gradient(135deg, #DC143C 0%, #e84363 100%);
+        color: white;
+        border-radius: 1rem;
+        margin-bottom: 3rem;
+    }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.85;
+        }
+
+    .features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 2rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 0.75rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(220,20,60,0.15);
+        }
+
+        .feature-card i {
+            font-size: 2.5rem;
+            color: #DC143C;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            color: #DC143C;
+            margin-bottom: 0.5rem;
+        }
+</style>

@@ -21,7 +21,9 @@ builder.Services.AddDbContext<WoodenFurnitureRestorationContext>(options =>
 });
 
 // ========== AUTOMAPPER ==========
-builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly,
+typeof(WoodenFurnitureRestoration.Shared.Mappings.SupplierMappingProfile).Assembly);    
+
 
 // ========== AUTHENTICATION ==========
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

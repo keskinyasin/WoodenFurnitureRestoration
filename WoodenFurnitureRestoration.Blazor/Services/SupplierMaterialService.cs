@@ -5,7 +5,7 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class SupplierMaterialService(HttpClient httpClient, ILogger<SupplierMaterialService> logger)
 {
-    private const string ApiUrl = "https://localhost:7001/api/suppliermaterials";
+    private const string ApiUrl = "https://localhost:7130/api/suppliermaterials";
 
     public async Task<List<SupplierMaterialDto>> GetAllAsync()
     {

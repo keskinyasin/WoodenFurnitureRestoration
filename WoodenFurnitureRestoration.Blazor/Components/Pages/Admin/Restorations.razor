@@ -151,6 +151,8 @@ else
                     <p><strong>Kategori:</strong> <span class="badge bg-info">@selectedRestoration.CategoryName</span></p>
                     <p><strong>Fiyat:</strong> <span class="text-success fw-bold fs-4">₺@selectedRestoration.RestorationPrice.ToString("N2")</span></p>
                     <p><strong>Durum:</strong> <span class="badge @GetStatusBadge(selectedRestoration.RestorationStatus)">@GetStatusText(selectedRestoration.RestorationStatus)</span></p>
+                    <p><strong>Başlangıç:</strong> @selectedRestoration.RestorationDate.ToString("dd MMMM yyyy")</p>
+                    <p><strong>Bitiş:</strong> @selectedRestoration.RestorationEndDate.ToString("dd MMMM yyyy")</p>
                 </div>
             </div>
         }
@@ -161,23 +163,38 @@ else
         <div class="row">
             <div class="col-md-8 mb-3">
                 <label class="form-label fw-bold">Restorasyon Adı <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editName" />
+                <input type="text" class="form-control @(errors.ContainsKey("Name") ? "is-invalid" : "")" @bind="editName" maxlength="100" placeholder="En az 3 karakter" />
+                @if (errors.ContainsKey("Name"))
+                {
+                    <div class="invalid-feedback">@errors["Name"]</div>
+                }
             </div>
             <div class="col-md-4 mb-3">
                 <label class="form-label fw-bold">Fiyat <span class="text-danger">*</span></label>
-                <div class="input-group"><span class="input-group-text">₺</span><input type="number" step="0.01" class="form-control" @bind="editPrice" /></div>
+                <div class="input-group">
+                    <span class="input-group-text">₺</span>
+                    <input type="number" step="0.01" class="form-control @(errors.ContainsKey("Price") ? "is-invalid" : "")" @bind="editPrice" />
+                </div>
+                @if (errors.ContainsKey("Price"))
+                {
+                    <div class="text-danger small">@errors["Price"]</div>
+                }
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold"><i class="bi bi-folder me-1"></i> Kategori <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="editCategoryId">
+                <select class="form-select @(errors.ContainsKey("Category") ? "is-invalid" : "")" @bind="editCategoryId">
                     <option value="0">-- Kategori Seçin --</option>
                     @foreach (var c in categories)
                     {
                         <option value="@c.Id">@c.Name</option>
                     }
                 </select>
+                @if (errors.ContainsKey("Category"))
+                {
+                    <div class="invalid-feedback">@errors["Category"]</div>
+                }
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Durum</label>
@@ -189,13 +206,36 @@ else
                 </select>
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Başlangıç Tarihi <span class="text-danger">*</span></label>
+                <input type="date" class="form-control @(errors.ContainsKey("StartDate") ? "is-invalid" : "")" @bind="editStartDate" />
+                @if (errors.ContainsKey("StartDate"))
+                {
+                    <div class="invalid-feedback">@errors["StartDate"]</div>
+                }
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Bitiş Tarihi <span class="text-danger">*</span></label>
+                <input type="date" class="form-control @(errors.ContainsKey("EndDate") ? "is-invalid" : "")" @bind="editEndDate" />
+                @if (errors.ContainsKey("EndDate"))
+                {
+                    <div class="invalid-feedback">@errors["EndDate"]</div>
+                }
+            </div>
+        </div>
         <div class="mb-3">
-            <label class="form-label fw-bold">Açıklama</label>
-            <textarea class="form-control" rows="3" @bind="editDescription"></textarea>
+            <label class="form-label fw-bold">Açıklama <span class="text-danger">*</span></label>
+            <textarea class="form-control @(errors.ContainsKey("Description") ? "is-invalid" : "")" rows="3" @bind="editDescription" maxlength="500" placeholder="Restorasyon hakkında açıklama"></textarea>
+            @if (errors.ContainsKey("Description"))
+            {
+                <div class="invalid-feedback">@errors["Description"]</div>
+            }
+            <small class="text-muted">@editDescription.Length / 500</small>
         </div>
         <div class="mb-3">
             <label class="form-label fw-bold">Görsel URL</label>
-            <input type="text" class="form-control" @bind="editImageUrl" />
+            <input type="text" class="form-control" @bind="editImageUrl" placeholder="https://..." />
         </div>
     </AdminModal>
 
@@ -217,6 +257,8 @@ else
     private string editName = "", editDescription = "", editImageUrl = "", editStatus = "Pending";
     private decimal editPrice;
     private int editCategoryId;
+    private DateTime editStartDate = DateTime.Today, editEndDate = DateTime.Today.AddDays(30);
+    private Dictionary<string, string> errors = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
 
@@ -227,14 +269,116 @@ else
 
     private void ViewRestoration(RestorationDto r) { selectedRestoration = r; showViewModal = true; }
     private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
-    private void OpenEditModal(RestorationDto r) { isEditMode = true; editingId = r.Id; editName = r.RestorationName; editDescription = r.RestorationDescription; editPrice = r.RestorationPrice; editImageUrl = r.RestorationImage; editStatus = r.RestorationStatus; editCategoryId = r.CategoryId; showModal = true; }
+    private void OpenEditModal(RestorationDto r)
+    {
+        isEditMode = true; editingId = r.Id;
+        editName = r.RestorationName; editDescription = r.RestorationDescription;
+        editPrice = r.RestorationPrice; editImageUrl = r.RestorationImage;
+        editStatus = r.RestorationStatus; editCategoryId = r.CategoryId;
+        editStartDate = r.RestorationDate; editEndDate = r.RestorationEndDate;
+        errors.Clear(); showModal = true;
+    }
     private void CloseModal() { showModal = false; ResetForm(); }
-    private void ResetForm() { editName = ""; editDescription = ""; editPrice = 0; editImageUrl = ""; editStatus = "Pending"; editCategoryId = 0; }
+    private void ResetForm()
+    {
+        editName = ""; editDescription = ""; editPrice = 0; editImageUrl = "";
+        editStatus = "Pending"; editCategoryId = 0;
+        editStartDate = DateTime.Today; editEndDate = DateTime.Today.AddDays(30);
+        errors.Clear();
+    }
 
-    private async Task SaveRestoration() { if (string.IsNullOrWhiteSpace(editName) || editCategoryId == 0) { ShowToast("Uyarı", "Zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; } isSaving = true; StateHasChanged(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); CloseModal(); await LoadData(); isSaving = false; }
+    private bool ValidateForm()
+    {
+        errors.Clear();
+
+        if (string.IsNullOrWhiteSpace(editName))
+            errors["Name"] = "Restorasyon adı zorunludur.";
+        else if (editName.Trim().Length < 3)
+            errors["Name"] = "En az 3 karakter olmalıdır.";
+
+        if (editCategoryId == 0)
+            errors["Category"] = "Kategori seçimi zorunludur.";
+
+        if (editPrice <= 0)
+            errors["Price"] = "Fiyat 0'dan büyük olmalıdır.";
+
+        if (string.IsNullOrWhiteSpace(editDescription))
+            errors["Description"] = "Açıklama zorunludur.";
+        else if (editDescription.Trim().Length < 5)
+            errors["Description"] = "Açıklama en az 5 karakter olmalıdır.";
+
+        if (editStartDate == default)
+            errors["StartDate"] = "Başlangıç tarihi zorunludur.";
+
+        if (editEndDate == default)
+            errors["EndDate"] = "Bitiş tarihi zorunludur.";
+        else if (editEndDate < editStartDate)
+            errors["EndDate"] = "Bitiş tarihi başlangıçtan önce olamaz.";
+
+        return errors.Count == 0;
+    }
+
+    private async Task SaveRestoration()
+    {
+        if (!ValidateForm())
+        {
+            ShowToast("Uyarı", "Lütfen formdaki hataları düzeltin.", ToastNotification.ToastType.Warning);
+            return;
+        }
+
+        isSaving = true; StateHasChanged();
+
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await RestorationService.UpdateAsync(editingId, new UpdateRestorationDto
+                {
+                    RestorationName = editName.Trim(),
+                    RestorationDescription = editDescription.Trim(),
+                    RestorationPrice = editPrice,
+                    RestorationImage = editImageUrl?.Trim() ?? "",
+                    RestorationStatus = editStatus,
+                    RestorationDate = editStartDate,
+                    RestorationEndDate = editEndDate,
+                    CategoryId = editCategoryId
+                });
+            }
+            else
+            {
+                success = await RestorationService.CreateAsync(new CreateRestorationDto
+                {
+                    RestorationName = editName.Trim(),
+                    RestorationDescription = editDescription.Trim(),
+                    RestorationPrice = editPrice,
+                    RestorationImage = editImageUrl?.Trim() ?? "",
+                    RestorationStatus = editStatus,
+                    RestorationDate = editStartDate,
+                    RestorationEndDate = editEndDate,
+                    CategoryId = editCategoryId
+                });
+            }
+
+            if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Restorasyon güncellendi" : "Restorasyon eklendi", ToastNotification.ToastType.Success); }
+            else ShowToast("Hata", "İşlem başarısız. Lütfen tekrar deneyin.", ToastNotification.ToastType.Error);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Restorasyon kaydetme hatası");
+            ShowToast("Hata", "Bir hata oluştu.", ToastNotification.ToastType.Error);
+        }
+        finally { isSaving = false; }
+    }
 
     private void OpenDeleteDialog(RestorationDto r) { deleteItemId = r.Id; deleteItemName = r.RestorationName; showDeleteDialog = true; }
-    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await RestorationService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true; StateHasChanged();
+        if (await RestorationService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); }
+        else ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
+        isDeleting = false;
+    }
 
     private string GetStatusBadge(string? s) => s?.ToLower() switch { "completed" => "bg-success", "inprogress" => "bg-info", "pending" => "bg-warning text-dark", "cancelled" => "bg-danger", _ => "bg-secondary" };
     private string GetStatusText(string? s) => s?.ToLower() switch { "completed" => "Tamamlandı", "inprogress" => "Devam Ediyor", "pending" => "Bekliyor", "cancelled" => "İptal", _ => s ?? "?" };

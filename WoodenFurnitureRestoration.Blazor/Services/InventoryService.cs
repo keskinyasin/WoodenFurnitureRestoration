@@ -5,7 +5,7 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class InventoryService(HttpClient httpClient, ILogger<InventoryService> logger)
 {
-    private const string ApiUrl = "https://localhost:7001/api/inventories";
+    private const string ApiUrl = "https://localhost:7130/api/inventories";
 
     public async Task<List<InventoryDto>> GetAllAsync()
     {

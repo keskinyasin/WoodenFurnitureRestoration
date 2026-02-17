@@ -5,25 +5,16 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class AddressService(HttpClient httpClient, ILogger<AddressService> logger)
 {
-    private const string ApiUrl = "https://localhost:7265/api/addresses";
+    private const string ApiUrl = "https://localhost:7130/api/addresses";
 
     public async Task<List<AddressDto>> GetAllAsync()
-
     {
         try
         {
             logger.LogInformation("📥 Fetching all addresses from API");
             var response = await httpClient.GetAsync(ApiUrl);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogError("❌ API error: {StatusCode}", response.StatusCode);
-                return [];
-            }
-
-            var addresses = await response.Content.ReadFromJsonAsync<List<AddressDto>>();
-            logger.LogInformation("✅ Successfully fetched {Count} addresses", addresses?.Count ?? 0);
-            return addresses ?? [];
+            if (!response.IsSuccessStatusCode) return [];
+            return await response.Content.ReadFromJsonAsync<List<AddressDto>>() ?? [];
         }
         catch (Exception ex)
         {

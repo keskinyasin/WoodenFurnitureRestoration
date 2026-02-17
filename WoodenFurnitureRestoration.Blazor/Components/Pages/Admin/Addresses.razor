@@ -182,9 +182,7 @@ else
             <div class="row">
                 <div class="col-md-6">
                     <div class="card mb-3">
-                        <div class="card-header bg-light">
-                            <i class="bi bi-link-45deg me-1"></i> İlişkili Kayıt
-                        </div>
+                        <div class="card-header bg-light"><i class="bi bi-link-45deg me-1"></i> İlişkili Kayıt</div>
                         <div class="card-body">
                             @if (selectedAddress.CustomerId.HasValue)
                             {
@@ -215,9 +213,7 @@ else
                 </div>
                 <div class="col-md-6">
                     <div class="card mb-3">
-                        <div class="card-header bg-light">
-                            <i class="bi bi-geo-alt me-1"></i> Konum
-                        </div>
+                        <div class="card-header bg-light"><i class="bi bi-geo-alt me-1"></i> Konum</div>
                         <div class="card-body">
                             <p class="mb-1"><strong>@selectedAddress.City</strong> / @selectedAddress.District</p>
                             <p class="mb-1">@selectedAddress.Country</p>
@@ -227,9 +223,7 @@ else
                 </div>
             </div>
             <div class="card">
-                <div class="card-header bg-light">
-                    <i class="bi bi-house me-1"></i> Tam Adres
-                </div>
+                <div class="card-header bg-light"><i class="bi bi-house me-1"></i> Tam Adres</div>
                 <div class="card-body">
                     <p class="mb-1"><strong>@selectedAddress.AddressLine1</strong></p>
                     @if (!string.IsNullOrEmpty(selectedAddress.AddressLine2))
@@ -247,12 +241,15 @@ else
                 OnClose="CloseModal"
                 OnSave="SaveAddress"
                 IsSaving="@isSaving"
-                HeaderClass="@(isEditMode ? "bg-warning text-dark" : "bg-primary text-white")"
                 ModalSize="modal-lg">
 
         <!-- Adres Türü Seçimi -->
         <div class="mb-4">
             <label class="form-label fw-bold">Bu adres kime ait? <span class="text-danger">*</span></label>
+            @if (errors.ContainsKey("Owner"))
+            {
+                <div class="text-danger small mb-2">@errors["Owner"]</div>
+            }
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-check card p-3 @(addressType == "Customer" ? "border-primary bg-light" : "")">
@@ -292,7 +289,7 @@ else
         {
             <div class="mb-3">
                 <label class="form-label fw-bold"><i class="bi bi-person me-1"></i> Müşteri <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="editCustomerId">
+                <select class="form-select @(errors.ContainsKey("Owner") ? "is-invalid" : "")" @bind="editCustomerId">
                     <option value="">-- Müşteri Seçin --</option>
                     @foreach (var c in customers)
                     {
@@ -305,7 +302,7 @@ else
                     if (selectedCustomer != null)
                     {
                         <div class="alert alert-info mt-2 mb-0 py-2">
-                            <small><i class="bi bi-info-circle me-1"></i> Seçilen müşteri: <strong>@selectedCustomer.FullName</strong> - @selectedCustomer.CustomerCity</small>
+                            <small><i class="bi bi-info-circle me-1"></i> <strong>@selectedCustomer.FullName</strong> — @selectedCustomer.CustomerCity, @selectedCustomer.CustomerPhone</small>
                         </div>
                     }
                 }
@@ -315,7 +312,7 @@ else
         {
             <div class="mb-3">
                 <label class="form-label fw-bold"><i class="bi bi-building me-1"></i> Tedarikçi <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="editSupplierId">
+                <select class="form-select @(errors.ContainsKey("Owner") ? "is-invalid" : "")" @bind="editSupplierId">
                     <option value="">-- Tedarikçi Seçin --</option>
                     @foreach (var s in suppliers)
                     {
@@ -328,7 +325,7 @@ else
                     if (selectedSupplier != null)
                     {
                         <div class="alert alert-success mt-2 mb-0 py-2">
-                            <small><i class="bi bi-info-circle me-1"></i> Seçilen tedarikçi: <strong>@selectedSupplier.SupplierName</strong></small>
+                            <small><i class="bi bi-info-circle me-1"></i> <strong>@selectedSupplier.SupplierName</strong> — @selectedSupplier.ShopName, @selectedSupplier.SupplierPhone</small>
                         </div>
                     }
                 }
@@ -340,29 +337,50 @@ else
         <!-- Adres Bilgileri -->
         <div class="mb-3">
             <label class="form-label fw-bold">Adres Satırı 1 <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" @bind="editAddressLine1" placeholder="Mahalle, Sokak, Bina No..." />
+            <input type="text" class="form-control @(errors.ContainsKey("AddressLine1") ? "is-invalid" : "")" @bind="editAddressLine1" maxlength="255" placeholder="Mahalle, Sokak, Bina No..." />
+            @if (errors.ContainsKey("AddressLine1"))
+            {
+                <div class="invalid-feedback">@errors["AddressLine1"]</div>
+            }
+            <small class="text-muted">@editAddressLine1.Length / 255</small>
         </div>
         <div class="mb-3">
             <label class="form-label fw-bold">Adres Satırı 2</label>
-            <input type="text" class="form-control" @bind="editAddressLine2" placeholder="Daire, Kat... (opsiyonel)" />
+            <input type="text" class="form-control" @bind="editAddressLine2" maxlength="255" placeholder="Daire, Kat... (opsiyonel)" />
         </div>
         <div class="row">
             <div class="col-md-4 mb-3">
                 <label class="form-label fw-bold">Şehir <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editCity" />
+                <input type="text" class="form-control @(errors.ContainsKey("City") ? "is-invalid" : "")" @bind="editCity" maxlength="100" placeholder="İstanbul" />
+                @if (errors.ContainsKey("City"))
+                {
+                    <div class="invalid-feedback">@errors["City"]</div>
+                }
             </div>
             <div class="col-md-4 mb-3">
                 <label class="form-label fw-bold">İlçe <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editDistrict" />
+                <input type="text" class="form-control @(errors.ContainsKey("District") ? "is-invalid" : "")" @bind="editDistrict" maxlength="100" placeholder="Kadıköy" />
+                @if (errors.ContainsKey("District"))
+                {
+                    <div class="invalid-feedback">@errors["District"]</div>
+                }
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">Posta Kodu</label>
-                <input type="text" class="form-control" @bind="editPostalCode" />
+                <label class="form-label fw-bold">Posta Kodu <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @(errors.ContainsKey("PostalCode") ? "is-invalid" : "")" @bind="editPostalCode" maxlength="20" placeholder="34000" />
+                @if (errors.ContainsKey("PostalCode"))
+                {
+                    <div class="invalid-feedback">@errors["PostalCode"]</div>
+                }
             </div>
         </div>
         <div class="mb-3">
-            <label class="form-label fw-bold">Ülke</label>
-            <input type="text" class="form-control" @bind="editCountry" />
+            <label class="form-label fw-bold">Ülke <span class="text-danger">*</span></label>
+            <input type="text" class="form-control @(errors.ContainsKey("Country") ? "is-invalid" : "")" @bind="editCountry" maxlength="100" placeholder="Türkiye" />
+            @if (errors.ContainsKey("Country"))
+            {
+                <div class="invalid-feedback">@errors["Country"]</div>
+            }
         </div>
     </AdminModal>
 
@@ -380,22 +398,14 @@ else
     private string deleteItemName = "", toastTitle = "", toastMessage = "";
     private ToastNotification.ToastType toastType;
 
-    // Filters
     private string filterType = "";
-    private int filterCustomerId;
-    private int filterSupplierId;
+    private int filterCustomerId, filterSupplierId;
     private string filterCity = "";
 
-    // Form fields
     private string addressType = "Customer";
-    private int? editCustomerId;
-    private int? editSupplierId;
-    private string editAddressLine1 = "";
-    private string editAddressLine2 = "";
-    private string editCity = "";
-    private string editDistrict = "";
-    private string editPostalCode = "";
-    private string editCountry = "Türkiye";
+    private int? editCustomerId, editSupplierId;
+    private string editAddressLine1 = "", editAddressLine2 = "", editCity = "", editDistrict = "", editPostalCode = "", editCountry = "Türkiye";
+    private Dictionary<string, string> errors = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -411,8 +421,7 @@ else
 
     private async Task LoadData()
     {
-        isLoading = true;
-        StateHasChanged();
+        isLoading = true; StateHasChanged();
         addresses = await AddressService.GetAllAsync() ?? new();
         customers = await CustomerService.GetAllAsync() ?? new();
         suppliers = await SupplierService.GetAllAsync() ?? new();
@@ -423,107 +432,126 @@ else
     private void ApplyFilters()
     {
         filteredAddresses = addresses;
-
-        // Tür filtresi
-        if (filterType == "customer")
-            filteredAddresses = filteredAddresses.Where(a => a.CustomerId.HasValue).ToList();
-        else if (filterType == "supplier")
-            filteredAddresses = filteredAddresses.Where(a => a.SupplierId.HasValue).ToList();
-
-        // Müşteri filtresi
-        if (filterCustomerId > 0)
-            filteredAddresses = filteredAddresses.Where(a => a.CustomerId == filterCustomerId).ToList();
-
-        // Tedarikçi filtresi
-        if (filterSupplierId > 0)
-            filteredAddresses = filteredAddresses.Where(a => a.SupplierId == filterSupplierId).ToList();
-
-        // Şehir filtresi
-        if (!string.IsNullOrWhiteSpace(filterCity))
-            filteredAddresses = filteredAddresses.Where(a => a.City.Contains(filterCity, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (filterType == "customer") filteredAddresses = filteredAddresses.Where(a => a.CustomerId.HasValue).ToList();
+        else if (filterType == "supplier") filteredAddresses = filteredAddresses.Where(a => a.SupplierId.HasValue).ToList();
+        if (filterCustomerId > 0) filteredAddresses = filteredAddresses.Where(a => a.CustomerId == filterCustomerId).ToList();
+        if (filterSupplierId > 0) filteredAddresses = filteredAddresses.Where(a => a.SupplierId == filterSupplierId).ToList();
+        if (!string.IsNullOrWhiteSpace(filterCity)) filteredAddresses = filteredAddresses.Where(a => a.City.Contains(filterCity, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     private void ViewAddress(AddressDto a) { selectedAddress = a; showViewModal = true; }
-
-    private void OpenAddModal()
-    {
-        isEditMode = false;
-        editingId = 0;
-        ResetForm();
-        showModal = true;
-    }
-
+    private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
     private void OpenEditModal(AddressDto a)
     {
-        isEditMode = true;
-        editingId = a.Id;
+        isEditMode = true; editingId = a.Id;
         addressType = a.CustomerId.HasValue ? "Customer" : "Supplier";
-        editCustomerId = a.CustomerId;
-        editSupplierId = a.SupplierId;
-        editAddressLine1 = a.AddressLine1;
-        editAddressLine2 = a.AddressLine2 ?? "";
-        editCity = a.City;
-        editDistrict = a.District;
-        editPostalCode = a.PostalCode;
-        editCountry = a.Country;
-        showModal = true;
+        editCustomerId = a.CustomerId; editSupplierId = a.SupplierId;
+        editAddressLine1 = a.AddressLine1; editAddressLine2 = a.AddressLine2 ?? "";
+        editCity = a.City; editDistrict = a.District; editPostalCode = a.PostalCode; editCountry = a.Country;
+        errors.Clear(); showModal = true;
     }
-
     private void CloseModal() { showModal = false; ResetForm(); }
-
     private void ResetForm()
     {
-        addressType = "Customer";
-        editCustomerId = null;
-        editSupplierId = null;
-        editAddressLine1 = "";
-        editAddressLine2 = "";
-        editCity = "";
-        editDistrict = "";
-        editPostalCode = "";
-        editCountry = "Türkiye";
+        addressType = "Customer"; editCustomerId = null; editSupplierId = null;
+        editAddressLine1 = ""; editAddressLine2 = ""; editCity = ""; editDistrict = "";
+        editPostalCode = ""; editCountry = "Türkiye"; errors.Clear();
+    }
+
+    private bool ValidateForm()
+    {
+        errors.Clear();
+
+        // Sahip kontrolü
+        if (addressType == "Customer" && (!editCustomerId.HasValue || editCustomerId == 0))
+            errors["Owner"] = "Lütfen bir müşteri seçin.";
+        else if (addressType == "Supplier" && (!editSupplierId.HasValue || editSupplierId == 0))
+            errors["Owner"] = "Lütfen bir tedarikçi seçin.";
+
+        // Adres Satırı 1
+        if (string.IsNullOrWhiteSpace(editAddressLine1))
+            errors["AddressLine1"] = "Adres satırı zorunludur.";
+        else if (editAddressLine1.Trim().Length < 10)
+            errors["AddressLine1"] = "Adres en az 10 karakter olmalıdır.";
+        else if (editAddressLine1.Trim().Length > 255)
+            errors["AddressLine1"] = "Adres en fazla 255 karakter olabilir.";
+
+        // Şehir
+        if (string.IsNullOrWhiteSpace(editCity))
+            errors["City"] = "Şehir zorunludur.";
+        else if (editCity.Trim().Length < 2)
+            errors["City"] = "Şehir en az 2 karakter olmalıdır.";
+
+        // İlçe
+        if (string.IsNullOrWhiteSpace(editDistrict))
+            errors["District"] = "İlçe zorunludur.";
+        else if (editDistrict.Trim().Length < 2)
+            errors["District"] = "İlçe en az 2 karakter olmalıdır.";
+
+        // Posta Kodu
+        if (string.IsNullOrWhiteSpace(editPostalCode))
+            errors["PostalCode"] = "Posta kodu zorunludur.";
+        else if (editPostalCode.Trim().Length < 3)
+            errors["PostalCode"] = "Posta kodu en az 3 karakter olmalıdır.";
+
+        // Ülke
+        if (string.IsNullOrWhiteSpace(editCountry))
+            errors["Country"] = "Ülke zorunludur.";
+        else if (editCountry.Trim().Length < 2)
+            errors["Country"] = "Ülke en az 2 karakter olmalıdır.";
+
+        return errors.Count == 0;
     }
 
     private async Task SaveAddress()
     {
-        // Validasyon
-        if (string.IsNullOrWhiteSpace(editAddressLine1) || string.IsNullOrWhiteSpace(editCity) || string.IsNullOrWhiteSpace(editDistrict))
+        if (!ValidateForm())
         {
-            ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning);
+            ShowToast("Uyarı", "Lütfen formdaki hataları düzeltin.", ToastNotification.ToastType.Warning);
             return;
         }
 
-        if (addressType == "Customer" && (!editCustomerId.HasValue || editCustomerId == 0))
-        {
-            ShowToast("Uyarı", "Lütfen müşteri seçin", ToastNotification.ToastType.Warning);
-            return;
-        }
-
-        if (addressType == "Supplier" && (!editSupplierId.HasValue || editSupplierId == 0))
-        {
-            ShowToast("Uyarı", "Lütfen tedarikçi seçin", ToastNotification.ToastType.Warning);
-            return;
-        }
-
-        isSaving = true;
-        StateHasChanged();
+        isSaving = true; StateHasChanged();
 
         try
         {
-            // TODO: API implementasyonu
-            ShowToast("Başarılı", isEditMode ? "Adres güncellendi" : "Adres eklendi", ToastNotification.ToastType.Success);
-            CloseModal();
-            await LoadData();
+            bool success;
+            if (isEditMode)
+            {
+                success = await AddressService.UpdateAsync(editingId, new UpdateAddressDto
+                {
+                    AddressLine1 = editAddressLine1.Trim(),
+                    AddressLine2 = string.IsNullOrWhiteSpace(editAddressLine2) ? null : editAddressLine2.Trim(),
+                    City = editCity.Trim(),
+                    District = editDistrict.Trim(),
+                    PostalCode = editPostalCode.Trim(),
+                    Country = editCountry.Trim()
+                });
+            }
+            else
+            {
+                success = await AddressService.CreateAsync(new CreateAddressDto
+                {
+                    AddressLine1 = editAddressLine1.Trim(),
+                    AddressLine2 = string.IsNullOrWhiteSpace(editAddressLine2) ? null : editAddressLine2.Trim(),
+                    City = editCity.Trim(),
+                    District = editDistrict.Trim(),
+                    PostalCode = editPostalCode.Trim(),
+                    Country = editCountry.Trim(),
+                    CustomerId = addressType == "Customer" ? editCustomerId : null,
+                    SupplierId = addressType == "Supplier" ? editSupplierId : null
+                });
+            }
+
+            if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Adres güncellendi" : "Adres eklendi", ToastNotification.ToastType.Success); }
+            else ShowToast("Hata", "İşlem başarısız. Lütfen tekrar deneyin.", ToastNotification.ToastType.Error);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Adres kaydetme hatası");
-            ShowToast("Hata", "Bir hata oluştu", ToastNotification.ToastType.Error);
+            ShowToast("Hata", "Bir hata oluştu.", ToastNotification.ToastType.Error);
         }
-        finally
-        {
-            isSaving = false;
-        }
+        finally { isSaving = false; }
     }
 
     private void OpenDeleteDialog(AddressDto a)
@@ -536,14 +564,8 @@ else
 
     private async Task ConfirmDelete()
     {
-        isDeleting = true;
-        StateHasChanged();
-        if (await AddressService.DeleteAsync(deleteItemId))
-        {
-            showDeleteDialog = false;
-            await LoadData();
-            ShowToast("Başarılı", "Adres silindi", ToastNotification.ToastType.Success);
-        }
+        isDeleting = true; StateHasChanged();
+        if (await AddressService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Adres silindi", ToastNotification.ToastType.Success); }
         else ShowToast("Hata", "Silme başarısız", ToastNotification.ToastType.Error);
         isDeleting = false;
     }

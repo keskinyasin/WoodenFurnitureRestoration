@@ -1,0 +1,115 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+
+<div class="furniture-layout">
+    <nav class="furniture-navbar">
+        <div class="navbar-brand">
+            <a href="/furniture">🪑 Furniture</a>
+        </div>
+        <div class="navbar-links">
+            <a href="/furniture" class="@GetActive("/furniture")">Ana Sayfa</a>
+            <a href="/furniture/products" class="@GetActive("/furniture/products")">Ürünler</a>
+            <a href="/furniture/categories" class="@GetActive("/furniture/categories")">Kategoriler</a>
+            <a href="/furniture/about" class="@GetActive("/furniture/about")">Hakkımızda</a>
+            <a href="/furniture/contact" class="@GetActive("/furniture/contact")">İletişim</a>
+        </div>
+        <div class="navbar-actions">
+            <a href="/" class="btn-back">← Ana Menü</a>
+        </div>
+    </nav>
+
+    <main class="furniture-content">
+        @Body
+    </main>
+
+    <footer class="furniture-footer">
+        <p>© 2026 Wooden Furniture — El yapımı ahşap mobilyalar</p>
+    </footer>
+</div>
+
+<style>
+    .furniture-layout {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .furniture-navbar {
+        background-color: #228B22;
+        padding: 0 2rem;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .navbar-brand a {
+        color: white;
+        font-size: 1.4rem;
+        font-weight: 800;
+        text-decoration: none;
+        letter-spacing: 1px;
+    }
+
+    .navbar-links {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .navbar-links a {
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.4rem 0.8rem;
+        border-radius: 0.3rem;
+        transition: all 0.3s ease;
+    }
+
+    .navbar-links a:hover,
+    .navbar-links a.active {
+        color: white;
+        background-color: rgba(255,255,255,0.15);
+    }
+
+    .btn-back {
+        color: #FFD700;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.4rem 1rem;
+        border: 1px solid #FFD700;
+        border-radius: 0.3rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+        background-color: #FFD700;
+        color: #228B22;
+    }
+
+    .furniture-content {
+        flex: 1;
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .furniture-footer {
+        background-color: #1a5c1a;
+        color: rgba(255,255,255,0.7);
+        text-align: center;
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
+</style>
+
+@code {
+    private string GetActive(string path)
+    {
+        return Navigation.Uri.Contains(path, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+}

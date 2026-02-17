@@ -109,6 +109,7 @@ else
             <div class="row">
                 <div class="col-md-6"><p><i class="bi bi-envelope me-2"></i><strong>E-posta:</strong> @selectedSupplier.SupplierEmail</p></div>
                 <div class="col-md-6"><p><i class="bi bi-telephone me-2"></i><strong>Telefon:</strong> @selectedSupplier.SupplierPhone</p></div>
+                <div class="col-md-12"><p><i class="bi bi-geo-alt me-2"></i><strong>Adres:</strong> @selectedSupplier.SupplierAddress</p></div>
             </div>
         }
     </AdminModal>
@@ -118,21 +119,50 @@ else
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Tedarikçi Adı <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editName" />
+                <input type="text" class="form-control @(errors.ContainsKey("Name") ? "is-invalid" : "")" @bind="editName" maxlength="50" placeholder="En az 3, en fazla 50 karakter" />
+                @if (errors.ContainsKey("Name"))
+                {
+                    <div class="invalid-feedback">@errors["Name"]</div>
+                }
+                <small class="text-muted">@editName.Length / 50</small>
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Mağaza Adı <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" @bind="editShopName" />
+                <input type="text" class="form-control @(errors.ContainsKey("ShopName") ? "is-invalid" : "")" @bind="editShopName" maxlength="50" placeholder="En az 2, en fazla 50 karakter" />
+                @if (errors.ContainsKey("ShopName"))
+                {
+                    <div class="invalid-feedback">@errors["ShopName"]</div>
+                }
+                <small class="text-muted">@editShopName.Length / 50</small>
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">E-posta <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" @bind="editEmail" />
+                <label class="form-label fw-bold">E-posta</label>
+                <input type="email" class="form-control @(errors.ContainsKey("Email") ? "is-invalid" : "")" @bind="editEmail" placeholder="ornek@mail.com" />
+                @if (errors.ContainsKey("Email"))
+                {
+                    <div class="invalid-feedback">@errors["Email"]</div>
+                }
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Telefon</label>
-                <input type="tel" class="form-control" @bind="editPhone" />
+                <label class="form-label fw-bold">Telefon <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control @(errors.ContainsKey("Phone") ? "is-invalid" : "")" @bind="editPhone" maxlength="20" placeholder="05XX XXX XX XX" />
+                @if (errors.ContainsKey("Phone"))
+                {
+                    <div class="invalid-feedback">@errors["Phone"]</div>
+                }
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <label class="form-label fw-bold">Adres <span class="text-danger">*</span></label>
+                <textarea class="form-control @(errors.ContainsKey("Address") ? "is-invalid" : "")" rows="3" @bind="editAddress" maxlength="500" placeholder="En az 10, en fazla 500 karakter"></textarea>
+                @if (errors.ContainsKey("Address"))
+                {
+                    <div class="invalid-feedback">@errors["Address"]</div>
+                }
+                <small class="text-muted">@editAddress.Length / 500</small>
             </div>
         </div>
     </AdminModal>
@@ -150,7 +180,8 @@ else
     private ToastNotification.ToastType toastType;
 
     private string searchTerm = "";
-    private string editName = "", editShopName = "", editEmail = "", editPhone = "";
+    private string editName = "", editShopName = "", editEmail = "", editPhone = "", editAddress = "";
+    private Dictionary<string, string> errors = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender && !isChecked) { isChecked = true; isAuthenticated = await AuthService.IsAdminLoggedInAsync(); if (!isAuthenticated) { Navigation.NavigateTo("/admin", replace: true); return; } await LoadData(); StateHasChanged(); } }
 
@@ -165,22 +196,99 @@ else
     private void ClearFilters() { searchTerm = ""; ApplyFilters(); }
     private void ViewSupplier(SupplierDto s) { selectedSupplier = s; showViewModal = true; }
     private void OpenAddModal() { isEditMode = false; editingId = 0; ResetForm(); showModal = true; }
-    private void OpenEditModal(SupplierDto s) { isEditMode = true; editingId = s.Id; editName = s.SupplierName; editShopName = s.ShopName; editEmail = s.SupplierEmail; editPhone = s.SupplierPhone; showModal = true; }
+    private void OpenEditModal(SupplierDto s) { isEditMode = true; editingId = s.Id; editName = s.SupplierName; editShopName = s.ShopName; editEmail = s.SupplierEmail ?? ""; editPhone = s.SupplierPhone; editAddress = s.SupplierAddress; showModal = true; }
     private void CloseModal() { showModal = false; ResetForm(); }
-    private void ResetForm() { editName = ""; editShopName = ""; editEmail = ""; editPhone = ""; }
+    private void ResetForm() { editName = ""; editShopName = ""; editEmail = ""; editPhone = ""; editAddress = ""; errors.Clear(); }
+
+    private bool ValidateForm()
+    {
+        errors.Clear();
+
+        // Tedarikçi Adı
+        if (string.IsNullOrWhiteSpace(editName))
+            errors["Name"] = "Tedarikçi adı zorunludur.";
+        else if (editName.Trim().Length < 3)
+            errors["Name"] = "Tedarikçi adı en az 3 karakter olmalıdır.";
+        else if (editName.Trim().Length > 50)
+            errors["Name"] = "Tedarikçi adı en fazla 50 karakter olabilir.";
+
+        // Mağaza Adı
+        if (string.IsNullOrWhiteSpace(editShopName))
+            errors["ShopName"] = "Mağaza adı zorunludur.";
+        else if (editShopName.Trim().Length < 2)
+            errors["ShopName"] = "Mağaza adı en az 2 karakter olmalıdır.";
+        else if (editShopName.Trim().Length > 50)
+            errors["ShopName"] = "Mağaza adı en fazla 50 karakter olabilir.";
+
+        // E-posta (opsiyonel ama format kontrolü)
+        if (!string.IsNullOrWhiteSpace(editEmail) && !IsValidEmail(editEmail))
+            errors["Email"] = "Geçerli bir e-posta adresi giriniz. (örn: ornek@mail.com)";
+
+        // Telefon
+        if (string.IsNullOrWhiteSpace(editPhone))
+            errors["Phone"] = "Telefon numarası zorunludur.";
+        else if (editPhone.Trim().Length < 10)
+            errors["Phone"] = "Telefon numarası en az 10 karakter olmalıdır.";
+        else if (editPhone.Trim().Length > 20)
+            errors["Phone"] = "Telefon numarası en fazla 20 karakter olabilir.";
+
+        // Adres
+        if (string.IsNullOrWhiteSpace(editAddress))
+            errors["Address"] = "Adres zorunludur.";
+        else if (editAddress.Trim().Length < 10)
+            errors["Address"] = "Adres en az 10 karakter olmalıdır.";
+        else if (editAddress.Trim().Length > 500)
+            errors["Address"] = "Adres en fazla 500 karakter olabilir.";
+
+        return errors.Count == 0;
+    }
+
+    private static bool IsValidEmail(string email)
+    {
+        try { var addr = new System.Net.Mail.MailAddress(email); return addr.Address == email; }
+        catch { return false; }
+    }
 
     private async Task SaveSupplier()
     {
-        if (string.IsNullOrWhiteSpace(editName) || string.IsNullOrWhiteSpace(editShopName) || string.IsNullOrWhiteSpace(editEmail)) { ShowToast("Uyarı", "Lütfen zorunlu alanları doldurun", ToastNotification.ToastType.Warning); return; }
+        if (!ValidateForm())
+        {
+            ShowToast("Uyarı", "Lütfen formdaki hataları düzeltin.", ToastNotification.ToastType.Warning);
+            return;
+        }
+
         isSaving = true; StateHasChanged();
-        var dto = new CreateSupplierDto { SupplierName = editName, ShopName = editShopName, SupplierEmail = editEmail, SupplierPhone = editPhone };
-        var success = isEditMode ? await SupplierService.UpdateAsync(editingId, new UpdateSupplierDto { SupplierName = editName, ShopName = editShopName, SupplierEmail = editEmail, SupplierPhone = editPhone }) : await SupplierService.CreateAsync(dto);
-        if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Güncellendi" : "Eklendi", ToastNotification.ToastType.Success); }
-        else ShowToast("Hata", "İşlem başarısız", ToastNotification.ToastType.Error);
+
+        bool success;
+        if (isEditMode)
+        {
+            success = await SupplierService.UpdateAsync(editingId, new UpdateSupplierDto
+            {
+                SupplierName = editName.Trim(),
+                ShopName = editShopName.Trim(),
+                SupplierEmail = string.IsNullOrWhiteSpace(editEmail) ? null : editEmail.Trim(),
+                SupplierPhone = editPhone.Trim(),
+                SupplierAddress = editAddress.Trim()
+            });
+        }
+        else
+        {
+            success = await SupplierService.CreateAsync(new CreateSupplierDto
+            {
+                SupplierName = editName.Trim(),
+                ShopName = editShopName.Trim(),
+                SupplierEmail = string.IsNullOrWhiteSpace(editEmail) ? null : editEmail.Trim(),
+                SupplierPhone = editPhone.Trim(),
+                SupplierAddress = editAddress.Trim()
+            });
+        }
+
+        if (success) { CloseModal(); await LoadData(); ShowToast("Başarılı", isEditMode ? "Tedarikçi güncellendi" : "Tedarikçi eklendi", ToastNotification.ToastType.Success); }
+        else ShowToast("Hata", "İşlem başarısız. Lütfen tekrar deneyin.", ToastNotification.ToastType.Error);
         isSaving = false;
     }
 
     private void OpenDeleteDialog(SupplierDto s) { deleteItemId = s.Id; deleteItemName = s.SupplierName; showDeleteDialog = true; }
-    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await SupplierService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
+    private async Task ConfirmDelete() { isDeleting = true; StateHasChanged(); if (await SupplierService.DeleteAsync(deleteItemId)) { showDeleteDialog = false; await LoadData(); ShowToast("Başarılı", "Tedarikçi silindi", ToastNotification.ToastType.Success); } isDeleting = false; }
     private async void ShowToast(string title, string msg, ToastNotification.ToastType type) { toastTitle = title; toastMessage = msg; toastType = type; showToast = true; StateHasChanged(); await Task.Delay(3000); showToast = false; StateHasChanged(); }
 }

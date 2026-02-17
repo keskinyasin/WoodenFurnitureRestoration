@@ -19,7 +19,8 @@ builder.Services.AddDbContext<WoodenFurnitureRestorationContext>(options =>
 
 // ========== 2️⃣ AUTOMAPPER ==========
 builder.Services.AddAutoMapper(
-    typeof(MappingProfile).Assembly
+    typeof(MappingProfile).Assembly,
+    typeof(WoodenFurnitureRestoration.Shared.Mappings.SupplierMappingProfile).Assembly
 );
 
 // ========== 3️⃣ LOGGING ==========
@@ -36,7 +37,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowBlazor", policy =>
     {
         policy
-            .WithOrigins("https://localhost:5001")
+            .WithOrigins("https://localhost:7265", "https://localhost:5001")
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();

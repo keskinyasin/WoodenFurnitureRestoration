@@ -5,7 +5,7 @@ namespace WoodenFurnitureRestoration.Blazor.Services;
 
 public class CategoryService(HttpClient httpClient, ILogger<CategoryService> logger)
 {
-    private const string ApiUrl = "https://localhost:7265/api/categories";
+    private const string ApiUrl = "https://localhost:7130/api/categories";
 
     public async Task<List<CategoryDto>> GetAllAsync()
     {
